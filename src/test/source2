@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+const fs = require('fs')
+
+//?! if (condition) {
+const a = 'a'
+//?! } else if (a > 5) {
+const b = 'b'
+//?! } else {
+const c = 'c'
+//?! }
