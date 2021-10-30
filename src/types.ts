@@ -63,6 +63,7 @@ export const enum ENode {
     INSTRUCTION_ATTRIBUTE,
     
     EXPRESSION,
+    STRING,
 
     TEXTFILE,
     TEXTLINE,

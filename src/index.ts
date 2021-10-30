@@ -15,7 +15,7 @@ export class ProstoRewrite {
 
     protected rg: RG
 
-    protected lineInterpolator: (line: string) => TRenderedFunction
+    protected lineInterpolator: (line: string) => string
 
     constructor(options?: Partial<TProstoRewriteOptions>) {
         this.blockSign = escapeRegex(options?.blockSign || this.blockSign)
@@ -112,20 +112,22 @@ export class ProstoRewrite {
 
     genInlineFunction(line: string): TRenderedFunction | string {
         if (line.indexOf(this.interpolationDelimiters[0]) >= 0) {
-            // const code = 'with (__scope__) {\n' +
-            //     'return `' + this.getInterpolationExpression(line.replace(/`/g, '\\`')) + '`' +
-            //     '}\n'
-            // return {
-            //     code,
-            //     render: new Function('__scope__', code) as TRenderFunction,
-            // }
-            return this.lineInterpolator(line)
+            const s = this.lineInterpolator(line)
+            let code = 'with (__scope__) {\n'
+            code += '  return `' + s + '`\n}\n'
+            return {
+                code,
+                render: new Function('__scope__', code) as TRenderFunction,
+            }
         }
         return line
     }
     
     getInterpolationExpression(line: string): string {
-        return line.replace(/\{\{?=/g, '${').replace(/=\}\}/g, '}')
+        if (line.indexOf(this.interpolationDelimiters[0]) >= 0) {
+            return this.lineInterpolator(line)
+        }
+        return line
     }
 
     public generateFunction(source: string, sourceName?: string): TRewriteTemplate {

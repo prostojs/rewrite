@@ -17,5 +17,5 @@ export const stringExpressionNode: (interpolationDelimiters: [string, string]) =
         context.expression = context._content.join('')
         context._content = []
     },
-    recognizes: [],
+    recognizes: [ENode.STRING],
 })
