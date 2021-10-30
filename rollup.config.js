@@ -13,6 +13,9 @@ const name = packageOptions.filename || path.basename(packageDir)
 // ensure TS checks only once for each build
 let hasTSChecked = false
 
+
+const dyeModifiers = ['dim', 'bold', 'underscore', 'inverse', 'italic', 'crossed']
+const dyeColors = ['red', 'green', 'cyan', 'blue', 'yellow', 'white', 'magenta', 'black']
 const warning = dye('yellow').attachConsole()
 
 const outputConfigs = {
@@ -167,7 +170,8 @@ function createConfig(format, output, plugins = []) {
         isGlobalBuild,
         isNodeBuild
       ),
-      createDyeReplacePlugin(),
+      createDyeReplaceConstPlugin(),
+      createDyeReplaceStringPlugin(),
       ...nodePlugins,
       ...plugins
     ],
@@ -183,18 +187,52 @@ function createConfig(format, output, plugins = []) {
   }
 }
 
-function createDyeReplacePlugin() {
+function createDyeReplaceStringPlugin() {
+  const c = dye('red')
+  const bg = dye('bg-red')
   const dyeReplacements = {
     'dye.reset': dye.reset,
+    'dye-off.color': c.close,
+    'dye-off.bg': bg.close,
   }
-  ;['dim', 'bold', 'red', 'green', 'cyan', 'blue', 'bg-red', 'white'].forEach(v => {
+  dyeModifiers.forEach(v => {
     dyeReplacements[`dye.${ v }`] = dye(v).open
     dyeReplacements[`dye-off.${ v }`] = dye(v).close
+  })
+  dyeColors.forEach(v => {
+    dyeReplacements[`dye.${ v }`] = dye(v).open
+    dyeReplacements[`dye.bg-${ v }`] = dye(v).open
+    dyeReplacements[`dye.${ v }-bright`] = dye(v).open
+    dyeReplacements[`dye.bg-${ v }-bright`] = dye(v).open
   })  
   return replace({
     values: dyeReplacements,
     delimiters: ['<', '>'],
     preventAssignment: false
+  })
+}
+
+function createDyeReplaceConstPlugin() {
+  const c = dye('red')
+  const bg = dye('bg-red')
+  const dyeReplacements = {
+    '__DYE_RESET__': dye.reset,
+    '__DYE_COLOR_OFF__': c.close,
+    '__DYE_BG_OFF__': bg.close,
+  }
+  dyeModifiers.forEach(v => {
+    dyeReplacements[`__DYE_${ v.toUpperCase() }__`] = dye(v).open
+    dyeReplacements[`__DYE_${ v.toUpperCase() }_OFF__`] = dye(v).close
+  })
+  dyeColors.forEach(v => {
+    dyeReplacements[`__DYE_${ v.toUpperCase() }__`] = dye(v).open
+    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }__`] = dye(v).open
+    dyeReplacements[`__DYE_${ v.toUpperCase() }_BRIGHT__`] = dye(v).open
+    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }_BRIGHT__`] = dye(v).open
+  })
+  return replace({
+    values: dyeReplacements,
+    preventAssignment: true
   })
 }
 

@@ -232,10 +232,10 @@ export interface TProstoRewriteDirOptions {
 }
 
 function bold(s: string) {
-    return '<dye.bold>' + s + '<dye-off.bold>'
+    return __DYE_BOLD__ + s + __DYE_BOLD_OFF__
 }
 function dim(s: string) {
-    return '<dye.dim>' + s + '<dye-off.dim>'
+    return __DYE_DIM__ + s + __DYE_DIM_OFF__
 }
 
 function panic(sourceName: string | undefined, message: string, line: string, details?: string) {
@@ -250,9 +250,10 @@ function panic(sourceName: string | undefined, message: string, line: string, de
 
 function printError(...args: string[]) {
     console.log(
-        '<dye.bg-red><dye.white> Rewrite ERROR <dye.reset>\n',
-        ...args.map(a => '<dye.red>' + a),
-        '<dye.reset>\n'
+        __DYE_BG_RED__ + __DYE_WHITE__ + 
+        ' Rewrite ERROR ' + __DYE_RESET__ + '\n',
+        ...args.map(a => __DYE_RED__ + a),
+        __DYE_RESET__ + '\n'
     )
 }
 
