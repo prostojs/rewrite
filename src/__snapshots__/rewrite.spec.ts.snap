@@ -18,7 +18,16 @@ const b = 'somevar'
 "
 `;
 
-exports[`rewrite must render file 1`] = `Promise {}`;
+exports[`rewrite must render file 1`] = `
+"#!/usr/bin/env node
+const fs = require('fs')
+
+ const a0 = '0'
+ const a1 = '1'
+ const a2 = '2'
+ const a3 = '3'
+ const a4 = '4'"
+`;
 
 exports[`rewrite must rewrite for loop 1`] = `
 "#!/usr/bin/env node

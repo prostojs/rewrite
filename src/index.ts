@@ -16,18 +16,19 @@ interface RG {
     noInterpolate: RegExp
     noInterpolateFile: RegExp
     noRewriteFile: RegExp
+    blockPrefix: RegExp
 }
 
 type TScope = Record<string, unknown>
 
 export class ProstoRewrite {
-    protected blockSign: string = '?!'
+    protected blockSign: string = '='
 
-    protected revealSign: string = '?='
+    protected revealSign: string = ':'
 
     protected interpolationDelimiters: [string, string] = ['{{=', '=}}']
 
-    protected instructionSign: string = '?@'
+    protected instructionSign: string = '@rw:'
 
     protected rg: RG
 
@@ -38,15 +39,16 @@ export class ProstoRewrite {
         this.instructionSign = escapeRegex(options?.instructionSign || this.instructionSign)
         const commentPrefix = '^\\s*(?:#|\\/\\/)'
         this.rg = {
-            if: new RegExp(`${commentPrefix}${this.blockSign}\\s+(if\\s*\\(.+)$`),
-            elseif: new RegExp(`${commentPrefix}${this.blockSign}\\s+(\\}?\\s*else\\s+if\\s*\\(.+)$`),
-            else: new RegExp(`${commentPrefix}${this.blockSign}\\s+(\\}?\\s*else\\s?.*)$`),
-            for: new RegExp(`${commentPrefix}${this.blockSign}\\s+(for\\s*\\(.+)$`),
-            end: new RegExp(`${commentPrefix}${this.blockSign}\\s+(\\}\\s*)$`),
+            if:     new RegExp(`${commentPrefix}${this.blockSign}\\s*IF\\s*\\((.+)\\)\\s*$`),
+            elseif: new RegExp(`${commentPrefix}${this.blockSign}\\s*ELSE\\s+IF\\s*\\((.+)\\)\\s*$`),
+            else:   new RegExp(`${commentPrefix}${this.blockSign}\\s*ELSE\\s*$`),
+            for:    new RegExp(`${commentPrefix}${this.blockSign}\\s*FOR\\s*\\((.+)\\)\\s*$`),
+            end:    new RegExp(`${commentPrefix}${this.blockSign}\\s*END\\s*([A-Z]+)\\s*$`),
             reveal: new RegExp(`${commentPrefix}${this.revealSign}(.+)$`),
-            noInterpolate: new RegExp(`${commentPrefix}${this.instructionSign}\\sno-interpolate-next-line$`),
-            noInterpolateFile: new RegExp(`${commentPrefix}${this.instructionSign}\\sno-interpolate-file$`),
-            noRewriteFile: new RegExp(`${commentPrefix}${this.instructionSign}\\sno-rewrite$`),
+            noInterpolate:      new RegExp(`${commentPrefix}\\s*${this.instructionSign}no-interpolate-next-line$`, 'i'),
+            noInterpolateFile:  new RegExp(`${commentPrefix}\\s*${this.instructionSign}no-interpolate-file$`, 'i'),
+            noRewriteFile:      new RegExp(`${commentPrefix}\\s*${this.instructionSign}no-rewrite$`, 'i'),
+            blockPrefix: new RegExp(`${commentPrefix}${this.blockSign}(.+)$`),
         }
     }
 
@@ -119,6 +121,7 @@ export class ProstoRewrite {
         let code = ''
         let nestedCount = 0
         let lastOpenBlock = 0
+        const blockStack: (keyof RG)[] = []
         let noInterpolate = false
         let noInterpolateFile = false
         let noRewriteFile = false
@@ -129,55 +132,87 @@ export class ProstoRewrite {
             global: undefined,
             process: undefined,
         }
+        const safeScopeKeys = Object.keys(safeScope)
+        const safeScopeValues = safeScopeKeys.map(k => safeScope[k])
+
+        function indent(n = nestedCount) {
+            return ' '.repeat(n * 2)
+        }
 
         const matched: Record<keyof RG, (v: string, i: number) => void> = {
             if: (v: string, i: number) => {
                 lastOpenBlock = i
-                const c = v.trim().replace(/\{$/, '')
-                code += c + ' {\n'
+                blockStack.push('if')
+                code += indent()
+                code += 'if (' + v.trim() + ') {\n'
                 nestedCount++
             },
             elseif: (v: string, i: number) => {
                 lastOpenBlock = i
-                const c = v.trim().replace(/^\}/, '').replace(/\{$/, '')
-                code += '} ' + c + ' {\n'
+                const prevBlock = blockStack.pop() || ''
+                if (!['if', 'elseif'].includes(prevBlock)) {
+                    panic(sourceName, `Unexpected "ELSE IF" at line ${ i + 1 }.`, renderCodeFragment(sourceLines, i))
+                }
+                blockStack.push('elseif')
+                code += indent(nestedCount - 1)
+                code += '} else if (' + v.trim() + ') {\n'
             },
             else: (v: string, i: number) => {
                 lastOpenBlock = i
-                const c = v.trim().replace(/^\}/, '').replace(/\{$/, '')
-                code += '} ' + c + ' {\n'
+                const prevBlock = blockStack.pop() || ''
+                if (!['if', 'elseif'].includes(prevBlock)) {
+                    panic(sourceName, `Unexpected "ELSE" at line ${ i + 1 }. Previous block was ${ prevBlock?.toUpperCase() || 'NONE' }.`, renderCodeFragment(sourceLines, i))
+                }
+                blockStack.push('else')
+                code += indent(nestedCount - 1)
+                code += '} else {\n'
             },
             for: (v: string, i: number) => {
                 lastOpenBlock = i
-                const c = v.trim().replace(/\{$/, '')
-                code += c + ' {\n'
+                blockStack.push('for')
+                code += indent()
+                code += 'for (' + v.trim() + ') {\n'
                 nestedCount++
             },
             end: (v: string, i: number) => {
                 nestedCount--
+                if (nestedCount < 0) {
+                    panic(sourceName, `Unexpected end of block at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
+                }
+                const prevBlock = blockStack.pop() || ''
+                if (['if', 'elseif', 'else'].includes(prevBlock)) {
+                    if (v !== 'IF') {
+                        panic(sourceName, `Wrong closing block statement at line ${ i + 1 }. Expected END IF.`, renderCodeFragment(sourceLines, i))
+                    }
+                } else if (v !== prevBlock.toUpperCase()) {
+                    panic(sourceName, `Wrong closing block statement at line ${ i + 1 }. Expected END ${ prevBlock.toUpperCase() }.`, renderCodeFragment(sourceLines, i))
+                }
+                code += indent()
+                code += '}\n'
                 if (nestedCount === 0) {
-                    code += v + '\n'
-                    const func = 'const lines = []\n' +
-                        'with (__scope__) {\n' +
-                        code + '\n' +
-                        '}\n' +
+                    const func = '"use strict";\nconst lines = []\n' +
+                        code +
                         'return lines.length ? lines.join(\'\\n\') : null\n'
-                    const output = (new Function('__scope__', func))({ ...safeScope })
-                    if (typeof output === 'string') {
-                        target.push(output)
+                    try {
+                        const output = (new Function(...safeScopeKeys, func))(...safeScopeValues)
+                        if (typeof output === 'string') {
+                            target.push(output)
+                        }
+                    } catch (e) {
+                        panic(sourceName, `Block interpolation error: ${ bold( (e as Error).message) }`, parseErrorStack(e as Error, func))
                     }
                     code = ''
-                }
-                if (nestedCount < 0) {
-                    panic(sourceName, `Unexpected end of block at line ${i}:`, sourceLines[i])
                 }
             },
             reveal: (v, i) => {
                 if (!code) {
-                    panic(sourceName, `Unexpected reveal expression at line ${i}:`, sourceLines[i])
+                    panic(sourceName, `Unexpected reveal expression at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
                 }
                 const escaped = v.replace(/`/g, '\\`')
-                code += `lines.push(\`${noInterpolate ? escaped : interpolateLine(escaped)}\`)\n`
+                code += indent() + `lines.push(\`${noInterpolate ? escaped : interpolateLine(escaped)}\`)\n`
+            },
+            blockPrefix: (v, i) => {
+                panic(sourceName, `Unrecognized block statement at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
             },
             noInterpolate: () => {
                 noInterpolate = true
@@ -210,14 +245,15 @@ export class ProstoRewrite {
                 try {
                     target.push((noInterpolate || noInterpolateFile) ? line : interpolateLine(line, safeScope))
                 } catch (e) {
-                    panic(sourceName, `Interpolation of line ${i} failed: ${bold((e as Error).message)}`, sourceLines[i])
+                    panic(sourceName, `Interpolation of line ${i + 1} failed: ${bold((e as Error).message)}`, renderCodeFragment(sourceLines, i))
                 }
             }
             noInterpolate = false
         }
 
         if (nestedCount !== 0) {
-            panic(sourceName, `Missing end of block for line ${lastOpenBlock}.`, sourceLines[lastOpenBlock])
+            const prevBlock = blockStack.pop() as string
+            panic(sourceName, `Missing end of block for line ${ lastOpenBlock + 1 }. Expected END ${ prevBlock.toUpperCase() }.`, renderCodeFragment(sourceLines, lastOpenBlock))
         }
 
         return target.join('\n')
@@ -249,12 +285,63 @@ function panic(sourceName: string | undefined, message: string, line: string, de
 }
 
 function printError(...args: string[]) {
-    console.log(
+    console.error(
         __DYE_BG_RED__ + __DYE_WHITE__ + 
-        ' Rewrite ERROR ' + __DYE_RESET__ + '\n',
+        ' Rewrite ERROR ' + __DYE_RESET__,
         ...args.map(a => __DYE_RED__ + a),
         __DYE_RESET__ + '\n'
     )
+}
+
+function renderCodeFragment(lines: string[], row: number, col?: number) {
+    function renderLine(n:number, isError = false): string {
+        let line = lines[n] || ''
+        const lineColor = (isError ? __DYE_BLUE_BRIGHT__ : __DYE_BLUE__)
+        if (isError) {
+            const l = getErrorLength()
+            const c = col || 0
+            line = line.slice(0, c) + __DYE_RED__ + __DYE_BOLD__ + line.slice(c, c + l) + __DYE_RESET__ + lineColor + line.slice(c + l)
+        }
+        return lineNumber(n + 1, isError) + lineColor + line + __DYE_COLOR_OFF__
+    }
+    function renderError(): string {
+        return lineNumber(undefined, true) + __DYE_RED__ + ' '.repeat(col || 0) + '^'.repeat(getErrorLength() || 1) + __DYE_RESET__
+    }
+    function getErrorLength() {
+        let l: number = lines[row].length
+        if (col) {
+            l = (/[\.-\s\(\)\*\/\+\{\}\[\]\?\'\"\`\<\>]/.exec(lines[row].slice(col + 1)) || { index: l - col }).index + 1
+        }
+        return l
+    }
+    return renderLine(row - 2) +
+           renderLine(row - 1) +
+           renderLine(row, true) +
+           renderError() +
+           renderLine(row + 1) +
+           renderLine(row + 2)
+}
+
+function parseErrorStack(e: Error, func: string): string {
+    const relevantLine = e.stack?.split('\n')[1] || ''
+    const regex = /<anonymous>:(\d+):(\d+)\)/g
+    const match = regex.exec(relevantLine)
+    if (match) {
+        const row = parseInt(match[1], 10)
+        const col = parseInt(match[2], 10)
+        return renderCodeFragment(func.split('\n'), row - 3, Math.max(col - 1, 0))
+    } else {
+        return ''
+    }
+}
+
+function lineNumber (i?: number, isError = false) {
+    let s = '       '
+    if (i && i > 0) {
+        s = '     ' + String(i)
+    }
+    s = s.slice(s.length - 4)
+    return '\n' + __DYE_RESET__ + (isError ? __DYE_RED__ + __DYE_BOLD__ : __DYE_DIM__) + s + '│ ' + __DYE_RESET__
 }
 
 function interpolateLine(line: string, scope?: TScope): string {

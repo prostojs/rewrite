@@ -47,12 +47,12 @@ describe('rewrite', () => {
     it('must execute rule no-interpolate-file', () => {
         const rewrite = new ProstoRewrite()
 
-        expect(rewrite.render('//?@ no-interpolate-file\n' + source3, scope)).toMatchSnapshot()
+        expect(rewrite.render('// @rw:no-interpolate-file\n' + source3, scope)).toMatchSnapshot()
     })
     it('must execute rule no-rewrite', () => {
         const rewrite = new ProstoRewrite()
 
-        const src = '//?@ no-rewrite\n\n' + 'start {{= some.var + \'123\' =}} end'
+        const src = '// @rw:no-rewrite\n\n' + 'start {{= some.var + \'123\' =}} end'
         expect(rewrite.render(src, scope)).toEqual(src)
     })
     it('must throw error on bad interpolation expression', () => {
@@ -64,30 +64,30 @@ describe('rewrite', () => {
     it('must throw error on missing end of block', () => {
         const rewrite = new ProstoRewrite()
 
-        const src = '//?! if (a === b) {\n\nconst a = b\n\n'
+        const src = '//=IF(a === b)\n\nconst a = b\n\n'
         expect(() => rewrite.render(src, scope)).toThrow()
     })
     it('must throw error on unexpected end of block', () => {
         const rewrite = new ProstoRewrite()
 
-        const src = '\n\nconst a = b\n\n//?! }\n'
+        const src = '\n\nconst a = b\n\n//=ENDFOR\n'
         expect(() => rewrite.render(src, scope)).toThrow()
     })
     it('must throw error on unexpected reveal', () => {
         const rewrite = new ProstoRewrite()
 
-        const src = '\n\n//?= const r = \'2\'\n'
+        const src = '\n\n//: const r = \'2\'\n'
         expect(() => rewrite.render(src, scope)).toThrow()
     })
     it('must throw error on bad expression at reveal', () => {
         const rewrite = new ProstoRewrite()
 
-        const src = '\n//?! if (condition) {\nconst c = \'{{=1 ]=}}\'\n\n//?! }'
+        const src = '\n//=IF(condition)\nconst c = \'{{=1 ]=}}\'\n\n//=ENDIF'
         expect(() => rewrite.render(src, scope)).toThrow()
     })
-    it('must render file', () => {
+    it('must render file', async () => {
         const rewrite = new ProstoRewrite()
 
-        expect(rewrite.renderFile('./src/test/source1')).toMatchSnapshot()
+        expect(await rewrite.renderFile('./src/test/source1')).toMatchSnapshot()
     })
 })
