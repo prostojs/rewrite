@@ -22,7 +22,7 @@ module.exports = {
     '**/dist/*.d.ts',
     'explorations/*',
     '**/__snapshots__/*',
-    '**/test/*',
+    '**/__test__/*',
   ],
   plugins: ['@typescript-eslint/eslint-plugin'],
   extends: [

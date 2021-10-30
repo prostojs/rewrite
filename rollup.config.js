@@ -90,6 +90,7 @@ function createConfig(format, output, plugins = []) {
   output.sourcemap = !!process.env.SOURCE_MAP
   output.externalLiveBindings = false
   output.globals = {
+    '@prostojs/parser': 'ProstoParser',
     '@prostojs/tree': 'ProstoTree',
   }
 

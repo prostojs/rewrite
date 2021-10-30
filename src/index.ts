@@ -1,26 +1,9 @@
+import { ProstoParser } from '@prostojs/parser'
+import { getTextParser } from './parsers/text-template'
+import { TProstoRewriteOptions, RG, TProstoRewriteDirOptions, TRenderedFunction, TRenderFunction, TRewriteTemplate, TScope, ENode } from './types'
+import { bold, escapeRegex, panic, parseErrorStack, printError, renderCodeFragment } from './utils'
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-export interface ProstoRewriteOptions {
-    blockSign: string
-    revealSign: string
-    interpolationDelimiters: [string, string]
-    instructionSign: string
-}
-
-interface RG {
-    if: RegExp
-    elseif: RegExp
-    else: RegExp
-    for: RegExp
-    end: RegExp
-    reveal: RegExp
-    noInterpolate: RegExp
-    noInterpolateFile: RegExp
-    noRewriteFile: RegExp
-    blockPrefix: RegExp
-}
-
-type TScope = Record<string, unknown>
-
 export class ProstoRewrite {
     protected blockSign: string = '='
 
@@ -32,7 +15,9 @@ export class ProstoRewrite {
 
     protected rg: RG
 
-    constructor(options?: Partial<ProstoRewriteOptions>) {
+    protected lineInterpolator: (line: string) => TRenderedFunction
+
+    constructor(options?: Partial<TProstoRewriteOptions>) {
         this.blockSign = escapeRegex(options?.blockSign || this.blockSign)
         this.revealSign = escapeRegex(options?.revealSign || this.revealSign)
         this.interpolationDelimiters = options?.interpolationDelimiters || this.interpolationDelimiters
@@ -50,39 +35,48 @@ export class ProstoRewrite {
             noRewriteFile:      new RegExp(`${commentPrefix}\\s*${this.instructionSign}no-rewrite$`, 'i'),
             blockPrefix: new RegExp(`${commentPrefix}${this.blockSign}(.+)$`),
         }
+        this.lineInterpolator = getTextParser(this.interpolationDelimiters)
     }
 
-    renderFile = __NODE_JS__ ? async (filePath: string, scope?: TScope, targetPath?: string): Promise<string> => {
+    public generateFunctionFromFile = __NODE_JS__ ? async (filePath: string): Promise<TRewriteTemplate> => {
         const fs = await import('fs')
         return new Promise((resolve, reject) => {
             fs.exists(filePath, (yes) => {
                 if (yes) {
                     fs.readFile(filePath, (err, file) => {
                         if (err) return reject(err)
-                        const result: string = this.render(file.toString(), scope, filePath)
-                        if (targetPath) {
-                            fs.writeFile(targetPath, result, (err) => {
-                                if (err) return reject(err)
-                                resolve(result)
-                            })
-                        } else {
-                            resolve(result)
-                        }
+                        resolve(this.generateFunction(file.toString(), filePath))
                     })
                 } else {
                     reject('File ' + filePath + ' does not exist')
                 }
             })
         })
-    } : (filePath: string, scope?: TScope, targetPath?: string): Promise<string> => {
+    } : async (_filePath: string): Promise<TRewriteTemplate> => {
         printError('Method "renderFile" only supported on NodeJS build.')
-        return new Promise((resolve, reject) => reject('Method "renderFile" only supported on NodeJS build.'))
+        return new Promise((_resolve, reject) => reject('Method "generateFunctionFromFile" only supported on NodeJS build.'))
     }
 
-    renderDir = __NODE_JS__ ? async (opts: TProstoRewriteDirOptions): Promise<Record<string, string>> => {
+    public renderFile = __NODE_JS__ ? async (filePath: string, scope?: TScope, targetPath?: string): Promise<string> => {
+        const fs = await import('fs')
+        const f = await this.generateFunctionFromFile(filePath)
+        const result = f(scope)
+        if (targetPath) {
+            const path = await import('path')
+            const dirname = path.dirname(targetPath)
+            await fs.promises.mkdir(dirname, { recursive: true })
+            await fs.promises.writeFile(targetPath, result)
+        }
+        return result
+    } : (_filePath: string, _scope?: TScope, _targetPath?: string): Promise<string> => {
+        printError('Method "renderFile" only supported on NodeJS build.')
+        return new Promise((_resolve, reject) => reject('Method "renderFile" only supported on NodeJS build.'))
+    }
+
+    public renderDir = __NODE_JS__ ? async (opts: TProstoRewriteDirOptions): Promise<Record<string, string>> => {
         const path = await import('path')
         const fs = await import('fs')
-        const d = path.resolve(opts.dirPath)
+        const d = path.resolve(opts.path)
         async function* getFiles(dir: string): AsyncGenerator<string> {
             const dirents = await fs.promises.readdir(dir, { withFileTypes: true })
             for (const dirent of dirents) {
@@ -95,52 +89,73 @@ export class ProstoRewrite {
             }
         }
         const result: Record<string, string> = {}
-        for await (const f of getFiles(opts.dirPath)) {
+        for await (const f of getFiles(opts.path)) {
             const relF = f.slice(d.length)
             let targetPath 
-            if (opts.targetDirPath) {
-                targetPath = path.join(opts.targetDirPath, relF)
-                const dirname = path.dirname(targetPath)
-                await fs.promises.mkdir(dirname, { recursive: true })
+            if (opts.output) {
+                targetPath = path.join(opts.output, relF)
             }
             const content = await this.renderFile(f, opts.scope, targetPath)
-            if (opts.onFile) {
-                opts.onFile(f, content)
+            if (typeof opts.onFileRendered === 'function') {
+                opts.onFileRendered(f, content)
             }
         }
         return result
-    } : (opts: TProstoRewriteDirOptions): Promise<Record<string, string>> => {
+    } : (_opts: TProstoRewriteDirOptions): Promise<Record<string, string>> => {
         printError('Method "renderDir" only supported on NodeJS build.')
-        return new Promise((resolve, reject) => reject('Method "renderDir" only supported on NodeJS build.'))
+        return new Promise((_resolve, reject) => reject('Method "renderDir" only supported on NodeJS build.'))
     }
 
-    render(source: string, scope?: TScope, sourceName?: string): string {
+    public render(source: string, scope?: TScope, sourceName?: string): string {
+        return this.generateFunction(source, sourceName)(scope)
+    }
+
+    genInlineFunction(line: string): TRenderedFunction | string {
+        if (line.indexOf(this.interpolationDelimiters[0]) >= 0) {
+            // const code = 'with (__scope__) {\n' +
+            //     'return `' + this.getInterpolationExpression(line.replace(/`/g, '\\`')) + '`' +
+            //     '}\n'
+            // return {
+            //     code,
+            //     render: new Function('__scope__', code) as TRenderFunction,
+            // }
+            return this.lineInterpolator(line)
+        }
+        return line
+    }
+    
+    getInterpolationExpression(line: string): string {
+        return line.replace(/\{\{?=/g, '${').replace(/=\}\}/g, '}')
+    }
+
+    public generateFunction(source: string, sourceName?: string): TRewriteTemplate {
         const sourceLines = source.split('\n')
-        const target = []
+        const target: (string | TRenderedFunction)[] = []
         const tokens: (keyof RG)[] = Object.keys(this.rg) as (keyof RG)[]
         let code = ''
         let nestedCount = 0
         let lastOpenBlock = 0
+        const startBlockIndex: number[] = []
         const blockStack: (keyof RG)[] = []
         let noInterpolate = false
         let noInterpolateFile = false
         let noRewriteFile = false
 
-        const safeScope: Record<string, unknown> = {
-            ...(scope || {}),
-            window: undefined,
-            global: undefined,
-            process: undefined,
-        }
-        const safeScopeKeys = Object.keys(safeScope)
-        const safeScopeValues = safeScopeKeys.map(k => safeScope[k])
-
         function indent(n = nestedCount) {
-            return ' '.repeat(n * 2)
+            return ' '.repeat(n * 2 + 2)
+        }
+
+        function pushTarget(item: string | TRenderedFunction) {
+            if (typeof item === 'string' && typeof target[target.length - 1] === 'string') {
+                target[target.length - 1] += '\n' + item
+            } else {
+                target.push(item)
+            }
         }
 
         const matched: Record<keyof RG, (v: string, i: number) => void> = {
             if: (v: string, i: number) => {
+                startBlockIndex.push(i)
                 lastOpenBlock = i
                 blockStack.push('if')
                 code += indent()
@@ -157,7 +172,7 @@ export class ProstoRewrite {
                 code += indent(nestedCount - 1)
                 code += '} else if (' + v.trim() + ') {\n'
             },
-            else: (v: string, i: number) => {
+            else: (_v: string, i: number) => {
                 lastOpenBlock = i
                 const prevBlock = blockStack.pop() || ''
                 if (!['if', 'elseif'].includes(prevBlock)) {
@@ -168,6 +183,7 @@ export class ProstoRewrite {
                 code += '} else {\n'
             },
             for: (v: string, i: number) => {
+                startBlockIndex.push(i)
                 lastOpenBlock = i
                 blockStack.push('for')
                 code += indent()
@@ -180,6 +196,7 @@ export class ProstoRewrite {
                     panic(sourceName, `Unexpected end of block at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
                 }
                 const prevBlock = blockStack.pop() || ''
+                const prevBlockIndex = startBlockIndex.pop() || 0
                 if (['if', 'elseif', 'else'].includes(prevBlock)) {
                     if (v !== 'IF') {
                         panic(sourceName, `Wrong closing block statement at line ${ i + 1 }. Expected END IF.`, renderCodeFragment(sourceLines, i))
@@ -190,16 +207,22 @@ export class ProstoRewrite {
                 code += indent()
                 code += '}\n'
                 if (nestedCount === 0) {
-                    const func = '"use strict";\nconst lines = []\n' +
+                    const func = 'const lines = []\n' +
+                        'with (__scope__) {\n' +
                         code +
+                        '}' + 
                         'return lines.length ? lines.join(\'\\n\') : null\n'
                     try {
-                        const output = (new Function(...safeScopeKeys, func))(...safeScopeValues)
-                        if (typeof output === 'string') {
-                            target.push(output)
-                        }
+                        pushTarget({
+                            code: func,
+                            render: new Function('__scope__', func) as TRenderFunction,
+                        })
                     } catch (e) {
-                        panic(sourceName, `Block interpolation error: ${ bold( (e as Error).message) }`, parseErrorStack(e as Error, func))
+                        panic(
+                            sourceName,
+                            `Block interpolation error: ${ bold( (e as Error).message) }.`,
+                            renderCodeFragment(sourceLines, prevBlockIndex, undefined, i)
+                        )
                     }
                     code = ''
                 }
@@ -209,9 +232,9 @@ export class ProstoRewrite {
                     panic(sourceName, `Unexpected reveal expression at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
                 }
                 const escaped = v.replace(/`/g, '\\`')
-                code += indent() + `lines.push(\`${noInterpolate ? escaped : interpolateLine(escaped)}\`)\n`
+                code += indent() + `lines.push(\`${noInterpolate ? escaped : this.getInterpolationExpression(escaped)}\`)\n`
             },
-            blockPrefix: (v, i) => {
+            blockPrefix: (_v, i) => {
                 panic(sourceName, `Unrecognized block statement at line ${i + 1}:`, renderCodeFragment(sourceLines, i))
             },
             noInterpolate: () => {
@@ -226,7 +249,7 @@ export class ProstoRewrite {
         }
 
         for (let i = 0; i < sourceLines.length; i++) {
-            if (noRewriteFile) return source
+            if (noRewriteFile) return () => source
             const line = sourceLines[i]
             let skip = false
             for (let j = 0; j < tokens.length; j++) {
@@ -243,7 +266,7 @@ export class ProstoRewrite {
                 matched.reveal(line, i)
             } else {
                 try {
-                    target.push((noInterpolate || noInterpolateFile) ? line : interpolateLine(line, safeScope))
+                    pushTarget((noInterpolate || noInterpolateFile) ? line : this.genInlineFunction(line))
                 } catch (e) {
                     panic(sourceName, `Interpolation of line ${i + 1} failed: ${bold((e as Error).message)}`, renderCodeFragment(sourceLines, i))
                 }
@@ -256,108 +279,32 @@ export class ProstoRewrite {
             panic(sourceName, `Missing end of block for line ${ lastOpenBlock + 1 }. Expected END ${ prevBlock.toUpperCase() }.`, renderCodeFragment(sourceLines, lastOpenBlock))
         }
 
-        return target.join('\n')
-    }
-}
-
-export interface TProstoRewriteDirOptions {
-    dirPath: string
-    scope?: TScope
-    onFile?: (path: string, result: string) => void
-    targetDirPath?: string
-}
-
-function bold(s: string) {
-    return __DYE_BOLD__ + s + __DYE_BOLD_OFF__
-}
-function dim(s: string) {
-    return __DYE_DIM__ + s + __DYE_DIM_OFF__
-}
-
-function panic(sourceName: string | undefined, message: string, line: string, details?: string) {
-    printError(
-        'Failed to render ' + bold(sourceName || 'source') + '\n',
-        message + '\n',
-        dim(line) + '\n',
-        details ? details + '\n' : ''
-    )
-    throw new Error('Failed to render ' + (sourceName || 'source'))
-}
-
-function printError(...args: string[]) {
-    console.error(
-        __DYE_BG_RED__ + __DYE_WHITE__ + 
-        ' Rewrite ERROR ' + __DYE_RESET__,
-        ...args.map(a => __DYE_RED__ + a),
-        __DYE_RESET__ + '\n'
-    )
-}
-
-function renderCodeFragment(lines: string[], row: number, col?: number) {
-    function renderLine(n:number, isError = false): string {
-        let line = lines[n] || ''
-        const lineColor = (isError ? __DYE_BLUE_BRIGHT__ : __DYE_BLUE__)
-        if (isError) {
-            const l = getErrorLength()
-            const c = col || 0
-            line = line.slice(0, c) + __DYE_RED__ + __DYE_BOLD__ + line.slice(c, c + l) + __DYE_RESET__ + lineColor + line.slice(c + l)
+        return (scope?: TScope): string => {
+            const safeScope: Record<string, unknown> = {
+                ...(scope || {}),
+                window: undefined,
+                global: undefined,
+                process: undefined,
+            }
+            const result: string[] = []
+            for (let i = 0; i < target.length; i++) {
+                const line = target[i]
+                if (typeof line === 'object') {
+                    let v: string | null = null
+                    try {
+                        v = line.render(safeScope)
+                    } catch (e) {
+                        panic(sourceName, `Block interpolation error: ${ bold( (e as Error).message) }`, parseErrorStack(e as Error, line.code))
+                    }
+                    if (v) {
+                        result.push(v)
+                    }
+                } else {
+                    result.push(line)
+                }
+            }
+            return result.join('\n')
         }
-        return lineNumber(n + 1, isError) + lineColor + line + __DYE_COLOR_OFF__
-    }
-    function renderError(): string {
-        return lineNumber(undefined, true) + __DYE_RED__ + ' '.repeat(col || 0) + '^'.repeat(getErrorLength() || 1) + __DYE_RESET__
-    }
-    function getErrorLength() {
-        let l: number = lines[row].length
-        if (col) {
-            l = (/[\.-\s\(\)\*\/\+\{\}\[\]\?\'\"\`\<\>]/.exec(lines[row].slice(col + 1)) || { index: l - col }).index + 1
-        }
-        return l
-    }
-    return renderLine(row - 2) +
-           renderLine(row - 1) +
-           renderLine(row, true) +
-           renderError() +
-           renderLine(row + 1) +
-           renderLine(row + 2)
-}
-
-function parseErrorStack(e: Error, func: string): string {
-    const relevantLine = e.stack?.split('\n')[1] || ''
-    const regex = /<anonymous>:(\d+):(\d+)\)/g
-    const match = regex.exec(relevantLine)
-    if (match) {
-        const row = parseInt(match[1], 10)
-        const col = parseInt(match[2], 10)
-        return renderCodeFragment(func.split('\n'), row - 3, Math.max(col - 1, 0))
-    } else {
-        return ''
     }
 }
 
-function lineNumber (i?: number, isError = false) {
-    let s = '       '
-    if (i && i > 0) {
-        s = '     ' + String(i)
-    }
-    s = s.slice(s.length - 4)
-    return '\n' + __DYE_RESET__ + (isError ? __DYE_RED__ + __DYE_BOLD__ : __DYE_DIM__) + s + '│ ' + __DYE_RESET__
-}
-
-function interpolateLine(line: string, scope?: TScope): string {
-    if (scope) {
-        if (line.indexOf('{{=') >= 0) {
-            const func = 'with (__scope__) {\n' +
-                'return `' + interpolateLine(line.replace(/`/g, '\\`')) + '`' +
-                '}\n'
-
-            return new Function('__scope__', func)(scope) as string
-        }
-        return line
-    }
-    return line.replace(/\{\{?=/g, '${').replace(/=\}\}/g, '}')
-}
-
-function escapeRegex(s: string): string {
-    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-}

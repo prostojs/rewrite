@@ -9,9 +9,9 @@ const scope = {
     a: 2,
 }
 
-const source1 = readFileSync('./src/test/source1').toString()
-const source2 = readFileSync('./src/test/source2').toString()
-const source3 = readFileSync('./src/test/source3').toString()
+const source1 = readFileSync('./src/__test__/source1').toString()
+const source2 = readFileSync('./src/__test__/source2').toString()
+const source3 = readFileSync('./src/__test__/source3').toString()
 
 describe('rewrite', () => {
     it('must interpolate lines', () => {
@@ -88,6 +88,6 @@ describe('rewrite', () => {
     it('must render file', async () => {
         const rewrite = new ProstoRewrite()
 
-        expect(await rewrite.renderFile('./src/test/source1')).toMatchSnapshot()
+        expect(await rewrite.renderFile('./src/__test__/source1')).toMatchSnapshot()
     })
 })

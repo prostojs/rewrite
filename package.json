@@ -40,7 +40,9 @@
       "global"
     ]
   },
-  "dependencies": {},
+  "dependencies": {
+    "@prostojs/parser": "^0.2.10"
+  },
   "gitHooks": {
     "commit-msg": "node scripts/verifyCommit.js"
   },
