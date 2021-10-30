@@ -90,6 +90,7 @@ function createConfig(format, output, plugins = []) {
   output.sourcemap = !!process.env.SOURCE_MAP
   output.externalLiveBindings = false
   output.globals = {
+    '@prostojs/tree': 'ProstoTree',
   }
 
   if (isGlobalBuild) {
@@ -201,9 +202,9 @@ function createDyeReplaceStringPlugin() {
   })
   dyeColors.forEach(v => {
     dyeReplacements[`dye.${ v }`] = dye(v).open
-    dyeReplacements[`dye.bg-${ v }`] = dye(v).open
-    dyeReplacements[`dye.${ v }-bright`] = dye(v).open
-    dyeReplacements[`dye.bg-${ v }-bright`] = dye(v).open
+    dyeReplacements[`dye.bg-${ v }`] = dye('bg-' + v).open
+    dyeReplacements[`dye.${ v }-bright`] = dye(v + '-bright').open
+    dyeReplacements[`dye.bg-${ v }-bright`] = dye('bg-' + v + '-bright').open
   })  
   return replace({
     values: dyeReplacements,
@@ -226,9 +227,9 @@ function createDyeReplaceConstPlugin() {
   })
   dyeColors.forEach(v => {
     dyeReplacements[`__DYE_${ v.toUpperCase() }__`] = dye(v).open
-    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }__`] = dye(v).open
-    dyeReplacements[`__DYE_${ v.toUpperCase() }_BRIGHT__`] = dye(v).open
-    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }_BRIGHT__`] = dye(v).open
+    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }__`] = dye('bg-' + v).open
+    dyeReplacements[`__DYE_${ v.toUpperCase() }_BRIGHT__`] = dye(v + '-bright').open
+    dyeReplacements[`__DYE_BG_${ v.toUpperCase() }_BRIGHT__`] = dye('bg-' + v + '-bright').open
   })
   return replace({
     values: dyeReplacements,
