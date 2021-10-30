@@ -12,6 +12,7 @@ import { tagNode } from './node-tag'
 import { valueNode } from './node-value'
 import { voidTagNode } from './node-void-tag'
 import { ENode } from '../types'
+import { stringNode } from './node-string'
 
 export const getHtmlParser = (opts: TProstoRewriteOptions) => {
     return new ProstoParser<ENode>({
@@ -25,6 +26,7 @@ export const getHtmlParser = (opts: TProstoRewriteOptions) => {
             attributeNode, 
             valueNode, 
             innerNode,
+            stringNode(),
             stringExpressionNode(opts.interpolationDelimiters),
             instructionAttributeNode(opts.htmlInstructionSign),
             interpolationAttributeNode(opts.htmlAttributeSign),

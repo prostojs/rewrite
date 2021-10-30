@@ -18,7 +18,7 @@ export const stringNode: () => TProstoParseNode<ENode> = () => ({
         negativeLookBehind: negativeLookBehindEscapingSlash,
         onMatchToken({ matched, context }) {
             const quote = matched && matched[0] || ''
-            console.log('onMatchToken end', quote)
+            console.log('onMatchToken end', quote, context)
             return quote === context.quote
         },
     },

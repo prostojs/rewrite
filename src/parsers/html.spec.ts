@@ -29,11 +29,13 @@ describe('html', () => {
         <span rw-else-if="a === 5"> condition 2 </span>
         <span rw-else> condition 3 </span>
         <div 
+            dense="ab\\"de"
             rw:data-id="d.id"
             rw:data-count="d.count"
             rw:data-weight="d.w"
             rw:class="white ? 'white' : 'bg-white'"
         >
+        {{= 'so good \\' =}}' =}}
         </div>
     </body>
     </html>`).toTree()
