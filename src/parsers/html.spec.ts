@@ -23,19 +23,19 @@ describe('html', () => {
         <img src="images/firefox-icon.png" rw:alt="'My test image ' + url">
         <div rw-for="item of items">
             <a rw:href="item" />
-            {{= item =}}
+            {{= item + 'string' =}}
         </div>
         <span rw-if="condition" rw:class=""> condition 1 </span>
         <span rw-else-if="a === 5"> condition 2 </span>
         <span rw-else> condition 3 </span>
         <div 
-            dense="ab\\"de"
+            dense="ab" de=""
             rw:data-id="d.id"
             rw:data-count="d.count"
             rw:data-weight="d.w"
             rw:class="white ? 'white' : 'bg-white'"
         >
-        {{= 'so good \\' =}}' =}}
+        {{= 'so good 25 \\' =}}' =}}
         </div>
     </body>
     </html>`).toTree()

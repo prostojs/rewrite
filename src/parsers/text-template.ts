@@ -1,47 +1,36 @@
-import { ProstoParser } from '@prostojs/parser'
-import { ENode } from '../types'
-import { stringNode } from './node-string'
-import { stringExpressionNode } from './node-string-expression'
-import { textlineNode } from './node-textline'
+import { ProstoParseNode, ProstoParser } from '@prostojs/parser'
+import { PExpression, PString } from './classes'
 
 export const getTextParser = (interpolationDelimiters: [string, string]) => {
-    const parser = new ProstoParser<ENode>({
-        rootNode: ENode.TEXTLINE,
+    const stringNode = new PString()
+
+    const stringExprNode = new PExpression(interpolationDelimiters, stringNode)
+
+    const rootNode = new ProstoParseNode({
+        icon: 'L',
+        label: 'text',
+        recognizes: [stringExprNode.id],
+    })
+
+    const parser = new ProstoParser({
+        rootNode,
         nodes: [
-            textlineNode,
-            stringNode(),
-            stringExpressionNode(interpolationDelimiters),
+            stringNode,
+            stringExprNode,
         ],
     })
+
     return function generate(line: string): string {
         const result = parser.parse(line)
         let code = ''
-        result._content.forEach(item => {
+        console.log(result.toTree())
+        result.content.forEach(item => {
             if (typeof item === 'string' || typeof item === 'number') {
                 code += (item as string).replace(/`/g, '\\`')
-            } else if (item.expression) {
-                code += '${' + (item.expression as string) + '}'
+            } else if (item.getCustomData().expression) {
+                code += '${' + (item.getCustomData().expression as string) + '}'
             }
         })
         return code
     }
-    // function generate(line: string): TRenderedFunction {
-    //     const result = parser.parse(line)
-    //     let code = 'with (__scope__) {\n'
-    //     code += '  return `'
-    //     result._content.forEach(item => {
-    //         if (typeof item === 'string' || typeof item === 'number') {
-    //             code += (item as string).replace(/`/g, '\\`')
-    //         } else if (item.expression) {
-    //             code += '${' + (item.expression as string) + '}'
-    //         }
-    //     })
-    //     code += '`\n}\n'
-    //     console.log(result.toTree())
-    //     console.log(code)
-    //     return {
-    //         code,
-    //         render: new Function('__scope__', code) as (scope?: TScope) => string,
-    //     }
-    // }
 }

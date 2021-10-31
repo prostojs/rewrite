@@ -41,7 +41,7 @@
     ]
   },
   "dependencies": {
-    "@prostojs/parser": "^0.2.10"
+    "@prostojs/parser": "^0.3.4"
   },
   "gitHooks": {
     "commit-msg": "node scripts/verifyCommit.js"

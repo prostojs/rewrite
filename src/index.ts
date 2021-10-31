@@ -1,6 +1,5 @@
-import { ProstoParser } from '@prostojs/parser'
 import { getTextParser } from './parsers/text-template'
-import { TProstoRewriteOptions, RG, TProstoRewriteDirOptions, TRenderedFunction, TRenderFunction, TRewriteTemplate, TScope, ENode } from './types'
+import { TProstoRewriteOptions, RG, TProstoRewriteDirOptions, TRenderedFunction, TRenderFunction, TRewriteTemplate, TScope } from './types'
 import { bold, escapeRegex, panic, parseErrorStack, printError, renderCodeFragment } from './utils'
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
