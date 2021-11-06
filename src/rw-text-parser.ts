@@ -1,7 +1,7 @@
 import { BasicNode } from '@prostojs/parser'
 import { stringExpressionNodeFactory } from './string-expression'
 import { TRewriteCodeFactory, TRewriteNodeType } from './types'
-import { getParser } from './rw-common'
+import { getRewriter } from './rw-common'
 
 interface TTextBlockDescr {
     key: TTextBlockOperations
@@ -116,5 +116,5 @@ export const getTextParser = () => {
     blockOperationNode.addRecognizes(blockOperationNode, stringExpressionNode)
     rootNode.addRecognizes(stringExpressionNode, blockOperationNode)
 
-    return getParser(rootNode)
+    return getRewriter(rootNode)
 }

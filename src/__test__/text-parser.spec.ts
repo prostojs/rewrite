@@ -7,31 +7,31 @@ const tp = getTextParser()
 describe('text-parser', () => {
   it('must parse "if"', () => {
       const name = 'if'
-      const result = tp.getCode(testFile(name))
+      const result = tp.genRewriteCode(testFile(name))
       // saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })
   it('must parse "for"', () => {
       const name = 'for'
-      const result = tp.getCode(testFile(name))
+      const result = tp.genRewriteCode(testFile(name))
       // saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })
   it('must parse "ifelseif"', () => {
       const name = 'ifelseif'
-      const result = tp.getCode(testFile(name))
+      const result = tp.genRewriteCode(testFile(name))
       // saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })
   it('must parse "if-for-nested"', () => {
       const name = 'if-for-nested'
-      const result = tp.getCode(testFile(name))
+      const result = tp.genRewriteCode(testFile(name))
       // saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })
   it('must parse "string"', () => {
       const name = 'string'
-      const result = tp.getCode(testFile(name))
+      const result = tp.genRewriteCode(testFile(name))
       // saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })

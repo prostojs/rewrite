@@ -1,10 +1,9 @@
-import { ProstoParserNode, ProstoParserNodeContext } from '@prostojs/parser'
-import { TRewriteNodeType } from './types'
+import { ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
+import { TProstoRewriter, TProstoRewriteScope, TRewriteNodeType } from './types'
 
-export function genSafeFunc(code: string): (scope?: Record<string, unknown>) => string {
+export function genSafeFunc(code: string): (scope?: TProstoRewriteScope) => string {
     try {
-        console.log(code)
-        return new Function('__ctx__', 'process', 'window', 'global', 'require', code) as (scope?: Record<string, unknown>) => string
+        return new Function('__ctx__', 'process', 'window', 'global', 'require', code) as (scope?: TProstoRewriteScope) => string
     } catch(e) {
         console.error((e as Error).message)
         console.error((e as Error).stack)
@@ -48,10 +47,9 @@ export function renderCode(context: ProstoParserNodeContext, level = 1) {
     return result
 }
 
-export function getParser(rootNode: ProstoParserNode) {
+export function getRewriter(rootNode: ProstoParserNode): TProstoRewriter {
     function getCode(source: string): string {
         const result = rootNode.parse(source)
-        console.log(result.toTree())
         return 'const __ = []\n' + 
             'let __v = \'\'\n' +
             'with (__ctx__) {\n' +
@@ -60,11 +58,41 @@ export function getParser(rootNode: ProstoParserNode) {
             'return __.join(\'\')'
     }
     function getFunc(source: string) {
-        return genSafeFunc(getCode(source))    
+        const code = getCode(source)
+        const func = genSafeFunc(code)
+        return (scope?: TProstoRewriteScope) => {
+            try {
+                return func(scope)
+            } catch (e) {
+                throwErrorFromFunction(e as Error, code)
+            }
+        }
+    }
+    function print(source: string) {
+        return console.log(rootNode.parse(source).toTree())
     }
 
     return {
-        getCode,
-        getFunc,
+        genRewriteCode: getCode,
+        genRewriteFunction: getFunc,
+        printAsTree: print,
+        rewrite: (source: string, scope?: TProstoRewriteScope) => getFunc(source)(scope),
     }
+}
+
+function throwErrorFromFunction(e: Error, code: string): never {
+    const relevantLine = e.stack?.split('\n')[1] || ''
+    const regex = /<anonymous>:(\d+):(\d+)\)/g
+    const match = regex.exec(relevantLine)
+    if (match) {
+        const row = parseInt(match[1], 10) - 2
+        const col = parseInt(match[2], 10) - 1
+        const output = renderCodeFragment(code.split('\n'), {
+            row,
+            error: col,
+        })
+        console.error(__DYE_RED_BRIGHT__ + e.message + __DYE_COLOR_OFF__)
+        console.error(output)
+    }
+    throw e
 }

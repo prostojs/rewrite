@@ -1,6 +1,6 @@
 import { BasicNode, ProstoParserNodeContext, TBasicNodeOptions } from '@prostojs/parser'
 import { htmlTextTags, htmlVoidTags } from './constants'
-import { getParser, pushString } from './rw-common'
+import { getRewriter, pushString } from './rw-common'
 import { stringExpressionNodeFactory } from './string-expression'
 import { TAttrNodeCustomData, THTMLBlockDescr, THTMLBlockOperations, TRewriteCodeFactory, TTagNodeCustomData, TValueNodeCustomData } from './types'
 import { escapeRegex } from './utils'
@@ -201,7 +201,7 @@ export const getHtmlParser = () => {
     commentNode.addRecognizes(stringExpressionNode)
     cDataNode.addRecognizes(stringExpressionNode)
 
-    return getParser(rootNode)
+    return getRewriter(rootNode)
 }
 
 function attributeNodeFactory(icon = '=', prefix?: string, type: 'plain' | 'block' | 'expr' = 'plain'): BasicNode<TAttrNodeCustomData> {
@@ -226,7 +226,7 @@ function attributeNodeFactory(icon = '=', prefix?: string, type: 'plain' | 'bloc
         }
         return v
     }
-    const children = prefix ? [valueNode] : [unquotedValueNode, valueNode]
+    const children = [unquotedValueNode, valueNode]
     const codeFuncs: Record<'plain' | 'block' | 'expr', TRewriteCodeFactory<TAttrNodeCustomData>> = {
         plain: ({ customData: { key, value, quote } }, level = 0) => {
             return ' '.repeat(level * 2) + pushString(key + escapeVal(value, quote))
@@ -252,13 +252,16 @@ function attributeNodeFactory(icon = '=', prefix?: string, type: 'plain' | 'bloc
             deep: 1,
             mapRule: 'customData.quote',
         })
-        .onPop(({ parserContext, customData: { value } }) => {
+        .onPop(({ parserContext, customData: { value, quote } }) => {
             if (type === 'expr' && value) {
                 try {
                     new Function(value)
                 } catch (e) {
                     parserContext.panic('Invalid expression: ' + (e as Error).message, value.length + 1)
                 }
+            }
+            if (type === 'expr' && !quote) {
+                parserContext.panic('Expression must be quoted.', value?.length || 1)
             }
         })
         .addAbsorbs(children, 'join->value')

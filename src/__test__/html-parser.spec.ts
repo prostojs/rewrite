@@ -3,7 +3,7 @@ import { getHtmlParser } from "../rw-html-parser"
 describe('html-parser', () => {
     it('must render code', () => {
         const p = getHtmlParser()
-        const r = p.getFunc(`<!DOCTYPE html>
+        const r = p.genRewriteFunction(`<!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
@@ -22,6 +22,7 @@ describe('html-parser', () => {
             <span v-else> condition 3 </span>
             <div 
                 dense="ab" de=""
+                unquoted=value
                 :data-id="d.id"
                 :data-count="d.count"
                 :data-weight="d.w"
@@ -36,7 +37,7 @@ describe('html-parser', () => {
     })
     it('must2', () => {
         const p = getHtmlParser()
-        const r = p.getFunc(`        <!DOCTYPE html>
+        const r = p.genRewriteFunction(`        <!DOCTYPE html>
         before div
         <!-- comment -->
         <div :attr1="val1" attr2="=val2" v-if='t'>

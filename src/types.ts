@@ -46,3 +46,12 @@ export interface THTMLBlockDescr {
     closingKey?: string
     renderOpen: (v?: string) => string
 }
+
+export interface TProstoRewriter {
+    genRewriteCode: (source: string) => string
+    genRewriteFunction: (source: string) => (scope?: TProstoRewriteScope) => string
+    printAsTree: (source: string) => void
+    rewrite: (source: string, scope?: TProstoRewriteScope) => string
+}
+
+export type TProstoRewriteScope = Record<string, unknown>
