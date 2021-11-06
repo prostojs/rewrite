@@ -1,4 +1,5 @@
 import { getHtmlParser } from './html-template'
+import { getTextParser2 } from './text-template'
 
 describe('html', () => {
     it('must', () => {
@@ -25,7 +26,7 @@ describe('html', () => {
             <a rw:href="item" />
             {{= item + 'string' =}}
         </div>
-        <span rw-if="condition" rw:class=""> condition 1 </span>
+        <span rw-if="condition" rw:class=""> condition <strong>1</strong> end of {{= some.value =}} </span>
         <span rw-else-if="a === 5"> condition 2 </span>
         <span rw-else> condition 3 </span>
         <div 
@@ -41,5 +42,37 @@ describe('html', () => {
     </html>`).toTree()
         )
         expect(parser).toBeDefined()
+    })
+
+    it('must text', () => {
+        const result = getTextParser2()(`
+        const v = 1
+        234
+        const b = '{{= a + ' =}}\\' abc' =}}'
+        //=IF(condition === 'undefined')
+            inside if
+            //= FOR (let i = 0; i < 5; i++)
+            const b = {{= i + ' =}}' =}}
+            inside for
+                //=IF (123)
+                inside nested if
+                //=ELSE IF (234234)
+                inside nested else if
+                //=ELSE IF (234234)
+                inside nested else if2
+                {{ multiline
+                expression 'test'}}
+                //=ELSE
+                inside nested else
+                //=ENDIF
+            after nested endif
+            //= ENDFOR
+        //=ELSE
+        NOTHING after else   
+        //=ENDIF
+        after endif
+        `)
+        console.log(result)
+        expect(result).toBeDefined()
     })
 })

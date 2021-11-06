@@ -1,0 +1,16 @@
+before
+//=IF (a === b)
+    //=FOR (const a of b)
+    do for
+        //=IF (c === d)
+            c === d
+        //=ELSE
+            else {{ someExpr.toString() }}
+        //=ENDIF
+    //=END FOR
+//=END IF
+text
+//=FOR (const a of b)
+do for 2
+//=END FOR
+after

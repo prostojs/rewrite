@@ -1,0 +1,8 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  if (a === b) {
+    __.push(`\n    do this\n    do that\n`)
+  }
+}
+return __.join('')

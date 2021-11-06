@@ -1,7 +1,0 @@
-export * from './p-attribute'
-export * from './p-comment'
-export * from './p-doctype'
-export * from './p-expression'
-export * from './p-string'
-export * from './p-tag'
-export * from './p-value'

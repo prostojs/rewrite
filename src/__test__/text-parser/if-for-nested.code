@@ -1,0 +1,26 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`before\n`)
+  if (a === b) {
+    __.push(`\n`)
+    for (const a of b) {
+      __.push(`\n    do for\n`)
+      if (c === d) {
+        __.push(`\n            c === d\n`)
+      } else {
+        __.push(`\n            else `)
+        __.push( someExpr.toString() )
+        __.push(`\n`)
+      }
+      __.push(`\n`)
+    }
+    __.push(`\n`)
+  }
+  __.push(`\ntext\n`)
+  for (const a of b) {
+    __.push(`\ndo for 2\n`)
+  }
+  __.push(`\nafter\n`)
+}
+return __.join('')

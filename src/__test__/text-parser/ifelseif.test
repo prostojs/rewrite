@@ -1,0 +1,7 @@
+//=IF (a === b)
+    do this
+//=ELSEIF (b === c)
+    do that
+//=ELSE
+    do other
+//=ENDIF

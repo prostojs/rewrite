@@ -1,5 +1,3 @@
-export const negativeLookBehindEscapingSlash = /[^\\][\\](\\\\)*$/
-
 export const htmlVoidTags = [
     'area',
     'base',
@@ -17,4 +15,9 @@ export const htmlVoidTags = [
     'source',
     'track',
     'wbr',
+]
+
+export const htmlTextTags = [
+    'script',
+    'style',
 ]

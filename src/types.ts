@@ -1,83 +1,48 @@
-export interface TProstoRewriteOptions {
-    blockSign: string
-    revealSign: string
-    interpolationDelimiters: [string, string]
-    instructionSign: string
-    htmlAttributeSign: string
-    htmlInstructionSign: string
+import { ProstoParserNodeContext } from '@prostojs/parser'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface TRewriteNodeType<T extends { code: TRewriteCodeFactory<any> } = { code: TRewriteCodeFactory<any> }> {
+    code: TRewriteCodeFactory<T>
+    openCode?: string
+    closeCode?: string
 }
 
-export interface TProstoRewriteDirOptions {
-    path: string
-    scope?: TScope
-    onFileRendered?: (path: string, result: string) => void
-    output?: string
+export type TStringNodeData = { quote: string }
+
+export interface TStringExpressionData extends TRewriteNodeType<TStringExpressionData> {
+    expression: string,
 }
 
-export interface RG {
-    if: RegExp
-    elseif: RegExp
-    else: RegExp
-    for: RegExp
-    end: RegExp
-    reveal: RegExp
-    noInterpolate: RegExp
-    noInterpolateFile: RegExp
-    noRewriteFile: RegExp
-    blockPrefix: RegExp
+export type TRewriteCodeFactory<T> = (context: ProstoParserNodeContext<T>, level?: number) => string
+
+export interface TValueNodeCustomData {
+    quote: string
 }
 
-export interface RG2 {
-    if: RegExp
-    endif1: RegExp
-    endif2: RegExp
-    elseif: RegExp
-    else: RegExp
-    for: RegExp
-    end: RegExp
-    reveal: RegExp
-    noInterpolate: RegExp
-    noInterpolateFile: RegExp
-    noRewriteFile: RegExp
-    blockPrefix: RegExp
+export interface TAttrNodeCustomData extends TRewriteNodeType<TAttrNodeCustomData> {
+    key: string
+    value?: string
+    quote?: string
 }
 
-export type TScope = Record<string, unknown>
-export type TRenderFunction = (scope?: TScope) => string | null
-export interface TRenderedFunction {
-    code: string
-    render: TRenderFunction
+export type THTMLBlockOperations = 'if' | 'for' | 'else' | 'else-if'
+
+export interface TTagNodeCustomData extends TRewriteNodeType<TTagNodeCustomData> {
+    isText?: boolean
+    isVoid?: boolean
+    operation?: THTMLBlockOperations
+    tag: string
+    endTag?: string
+    operations?: TAttrNodeCustomData[]
+    attrs?: TAttrNodeCustomData[]
 }
-export type TRewriteTemplate = (scope?: TScope) => string
 
-export const enum ENode {
-    DOCUMENT,
-    DOCTYPE,
-    TAG,
-    VOID_TAG,
-    ATTRIBUTE,
-    VALUE,
-    INNER,
-    COMMENT,
-    INTERPOLATION_ATTRIBUTE,
-    INSTRUCTION_ATTRIBUTE,
-    
-    EXPRESSION,
-    STRING,
-
-    TEXTFILE,
-    TEXTLINE,
-
-    BLOCK,
-    BLOCK_IF,
-    BLOCK_ELSE,
-    BLOCK_ELSEIF,
-    BLOCK_FOR,
-    BLOCK_ENDFOR,
-    BLOCK_ENDIF,
-
-    INSTRUCTION,
-    NO_INTERPOLATE,
-    IGNORED_LINE,
-    REVEAL,
+export interface THTMLBlockDescr {
+    key: THTMLBlockOperations
+    exprRequired?: boolean
+    compatible?: THTMLBlockOperations[]
+    opening?: boolean
+    overtakes?: THTMLBlockOperations[]
+    closingKey?: string
+    renderOpen: (v?: string) => string
 }

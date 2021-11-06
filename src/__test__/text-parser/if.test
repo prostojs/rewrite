@@ -1,0 +1,4 @@
+//=IF (a === b)
+    do this
+    do that
+//=ENDIF
