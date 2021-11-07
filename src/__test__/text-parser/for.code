@@ -2,7 +2,7 @@ const __ = []
 let __v = ''
 with (__ctx__) {
   for (a of b) {
-    __.push(`\n    do this\n    do that\n`)
+    __.push(`    do this\n    do that\n`)
   }
 }
 return __.join('')

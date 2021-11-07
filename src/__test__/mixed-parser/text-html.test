@@ -1,0 +1,12 @@
+// text part
+//=IF (a === b)
+const a = '1'
+//=ENDIF
+//!@ html-mode-on
+<div v-for="a ob n">
+    <span :data="c + d" />
+</div>
+//!@ html-mode-off
+//=IF (b === c)
+const b = '2'
+//=ENDIF

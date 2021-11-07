@@ -1,4 +1,5 @@
 import { ProstoParserNodeContext } from '@prostojs/parser'
+import { IMinimatch } from 'minimatch'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface TRewriteNodeType<T extends { code: TRewriteCodeFactory<any> } = { code: TRewriteCodeFactory<any> }> {
@@ -55,3 +56,54 @@ export interface TProstoRewriter {
 }
 
 export type TProstoRewriteScope = Record<string, unknown>
+
+export interface TRewriteCommonOptions {
+    exprDelimeters: [string, string]
+    blockOperation: string
+    directive: string
+}
+
+export interface TRewriteHtmlOptions extends TRewriteCommonOptions {
+    attrExpression: string
+    voidTags: string[]
+    textTags: string[]
+}
+
+export interface TRewriteTextOptions extends TRewriteCommonOptions {
+    revealLine: string
+}
+
+export interface TRewriteOptions {
+    defaultMode: TRewriteMode
+    debug: boolean
+    htmlPattern: IMinimatch[]
+    textPattern: IMinimatch[]
+    html: TRewriteHtmlOptions
+    text: TRewriteTextOptions
+}
+
+export type TRewriteMode = 'html' | 'text' | 'auto'
+
+export interface TRewriteOptionsPublic {
+    defaultMode?: TRewriteMode
+    debug?: boolean
+    htmlPattern?: string[]
+    textPattern?: string[]
+    html?: Partial<TRewriteHtmlOptions>
+    text?: Partial<TRewriteTextOptions>
+}
+
+export interface TRewriteFileOptions {
+    input: string
+    output?: string
+    mode?: TRewriteMode
+}
+
+export interface TRewriteDirOptions {
+    baseDir: string
+    include?: string[]
+    exclude?: string[]
+    output?: string
+    mode?: TRewriteMode
+    onFile?: (path: string, output: string) => void
+}

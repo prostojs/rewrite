@@ -1,7 +1,8 @@
 import { BasicNode } from '@prostojs/parser'
 import { stringExpressionNodeFactory } from './string-expression'
-import { TRewriteCodeFactory, TRewriteNodeType } from './types'
+import { TRewriteCodeFactory, TRewriteNodeType, TRewriteTextOptions } from './types'
 import { getRewriter } from './rw-common'
+import { escapeRegex } from './utils'
 
 interface TTextBlockDescr {
     key: TTextBlockOperations
@@ -58,16 +59,16 @@ interface TTextBlockCustomData extends TRewriteNodeType<TTextBlockCustomData> {
     endRest: string
 }
 
-export const getTextParser = () => {
-    const rootNode = new BasicNode({})
-    const stringExpressionNode = stringExpressionNodeFactory(['{{', '}}'])
+export const getTextParser = (opts: TRewriteTextOptions, recognizeHtmlDirective = false) => {
+    const rootNode = new BasicNode({ icon: 'Text Mode' })
+    const stringExpressionNode = stringExpressionNodeFactory(opts.exprDelimeters)
 
     const blockOperationNode = new BasicNode<TTextBlockCustomData>({
         label: '',
         icon: '↳',
         tokens: [
-            /^\s*(?:\/\/|#)=\s*(?<block>\w+[^\S\r\n]*\w*)[^\S\r\n]*(?<expression>\(.*\))?(?<rest>[^\n]*)?$/m,
-            /^\s*(?:\/\/|#)=\s*(?<endBlock>END[^\S\r\n]*\w*)[^\S\r\n]*(?<endExpression>\(.*\))?(?<endRest>[^\n]*)?$/m,
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.blockOperation) }\\s*(?<block>\\w+[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<expression>\\(.*\\))?(?<rest>[^\\n]*)?$`, 'm'),
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.blockOperation) }\\s*(?<endBlock>END[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<endExpression>\\(.*\\))?(?<endRest>[^\\n]*)?$`, 'm'),
         ],
         tokenOE: 'omit-omit',
     })
@@ -99,11 +100,13 @@ export const getTextParser = () => {
                 parserContext.panic(`Unexpected block operation "${ block.trim() }".`)
             }
         })
-        .onMatch(({ customData, context }) => {
+        .onMatch(({ customData, context, parserContext }) => {
             customData.block = customData.block.replace(/[\s\n]/g, '')
             customData.descr = textBlockTypesO[customData.block as TTextBlockOperations]
             customData.openCode = customData.descr.code(context)
+            parserContext.jump()  // eating the new line
         })
+        .onPop(({ parserContext }) => parserContext.jump())  // eating the new line
         .onMatchEndToken(({ customData, matched, parserContext }) => {
             const { endBlock } = (matched as RegExpExecArray).groups as unknown as TTextBlockCustomData
             const endKey = 'END' + (customData.descr.closingKey || customData.descr.key)
@@ -113,8 +116,58 @@ export const getTextParser = () => {
             customData.closeCode = '}\n'
             return true
         })
-    blockOperationNode.addRecognizes(blockOperationNode, stringExpressionNode)
-    rootNode.addRecognizes(stringExpressionNode, blockOperationNode)
+        .popsAtEOFSource(true)
 
-    return getRewriter(rootNode)
+    const revealNode = new BasicNode({
+        icon: ':',
+        tokens: [
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.revealLine) }[^\\S\\r\\n]*`, 'm'),
+            /$/m,
+        ],
+        tokenOE: 'omit-',
+    })
+        .addRecognizes(stringExpressionNode)
+        .popsAtEOFSource(true)
+
+    const ignoreDirectiveNode = new BasicNode({
+        icon: ':',
+        tokens: [
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.directive) }\\s*ignore-next-line\\s*$`, 'm'),
+            /^[^\n]*$/m,
+        ],
+        tokenOE: 'omit-',
+    })
+        .popsAtEOFSource(true)
+
+    const htmlDirectiveNode = new BasicNode({
+        icon: 'H',
+        tokens: [
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.directive) }\\s*html-mode-on\\s*$`, 'm'),
+            new RegExp(`^\\s*(?:\\/\\/|#)${ escapeRegex(opts.directive) }\\s*html-mode-off\\s*$`, 'm'),
+        ],
+        tokenOE: 'omit-omit',
+    })
+        .onMatch(({ parserContext }) => parserContext.jump())  // eating the new line
+        .onPop(({ parserContext }) => parserContext.jump())  // eating the new line
+
+    blockOperationNode.addRecognizes(ignoreDirectiveNode, blockOperationNode, revealNode, stringExpressionNode)
+    rootNode.addRecognizes(ignoreDirectiveNode, blockOperationNode, revealNode, stringExpressionNode)
+
+    if (recognizeHtmlDirective) {
+        rootNode.addRecognizes(htmlDirectiveNode)
+        blockOperationNode.addRecognizes(htmlDirectiveNode)
+    }
+
+    return {
+        stringExpressionNode,
+        revealNode,
+        ignoreDirectiveNode,
+        blockOperationNode,
+        rootNode,
+        htmlDirectiveNode,
+    }
+}
+
+export const getTextRewriter = (opts: TRewriteTextOptions, debug = false) => {
+    return getRewriter(getTextParser(opts).rootNode, debug)
 }

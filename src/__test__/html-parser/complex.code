@@ -1,0 +1,119 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`<!DOCTYPE html>`)
+  __.push(`\n`)
+  __.push(`<html`)
+  __.push(`>\n`)
+  __.push(`<head`)
+  __.push(`>\n    `)
+  __.push(`<meta `)
+  __.push(`charset="utf-8"`)
+  __.push(`>\n    `)
+  __.push(`<title`)
+  __.push(`>My test page`)
+  __.push(`</title>\n    `)
+  __.push(`<!-- First Comment -->`)
+  __.push(`\n`)
+  __.push(`</head>\n`)
+  __.push(`<body`)
+  __.push(`>\n    `)
+  __.push(`<!-- <div>commented div `)
+  __.push( value )
+  __.push(`: `)
+  __.push( item.toUpperCase() )
+  __.push(` </div> -->`)
+  __.push(`\n    `)
+  __.push(`<img `)
+  __.push(`src="images/firefox-icon.png"`)
+  __.push(` `)
+  __v = 'My test image ' + url
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`alt`)
+  } else {
+    __.push(`alt="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(`>\n    `)
+  for (item of items) {
+    __.push(`<div `)
+    __.push(`>\n        `)
+    __.push(`<a `)
+    __v = item
+    if (typeof __v === 'boolean') {
+      if (__v) __.push(`href`)
+    } else {
+      __.push(`href="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    }
+    __.push(` />`)
+    __.push(`\n        `)
+    __.push( item + 'string' )
+    __.push(`\n    `)
+    __.push(`</div>\n    `)
+  }
+  if (condition) {
+    __.push(`<span `)
+    __.push(` `)
+    __v = ''
+    if (typeof __v === 'boolean') {
+      if (__v) __.push(`class`)
+    } else {
+      __.push(`class="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    }
+    __.push(`> condition `)
+    __.push(`<strong`)
+    __.push(`>1`)
+    __.push(`</strong> `)
+    __.push(`end of `)
+    __.push( some.value )
+    __.push(` `)
+    __.push(`</span>\n    `)
+  } else if (a === 5) {
+    __.push(`<span `)
+    __.push(`> condition 2 `)
+    __.push(`</span>\n    `)
+  } else {
+    __.push(`<span `)
+    __.push(`> condition 3 `)
+    __.push(`</span>\n    `)
+  }
+  __.push(`<div \n        `)
+  __.push(`dense="ab"`)
+  __.push(` `)
+  __.push(`de`)
+  __.push(`\n        `)
+  __v = d.id
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`data-id`)
+  } else {
+    __.push(`data-id="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(`\n        `)
+  __v = d.count
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`data-count`)
+  } else {
+    __.push(`data-count="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(`\n        `)
+  __v = d.w
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`data-weight`)
+  } else {
+    __.push(`data-weight="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(`\n        `)
+  __v = white ? 'white' : 'bg-white'
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`class`)
+  } else {
+    __.push(`class="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(`\n    `)
+  __.push(`>\n    `)
+  __.push( 'so good 25 \\' )
+  __.push(`' }}\n    `)
+  __.push(`</div>\n`)
+  __.push(`</body>\n`)
+  __.push(`</html>`)
+}
+return __.join('')

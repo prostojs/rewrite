@@ -1,8 +1,7 @@
 import { BasicNode, ProstoParserNodeContext, TBasicNodeOptions } from '@prostojs/parser'
-import { htmlTextTags, htmlVoidTags } from './constants'
 import { getRewriter, pushString } from './rw-common'
 import { stringExpressionNodeFactory } from './string-expression'
-import { TAttrNodeCustomData, THTMLBlockDescr, THTMLBlockOperations, TRewriteCodeFactory, TTagNodeCustomData, TValueNodeCustomData } from './types'
+import { TAttrNodeCustomData, THTMLBlockDescr, THTMLBlockOperations, TRewriteCodeFactory, TRewriteHtmlOptions, TTagNodeCustomData, TValueNodeCustomData } from './types'
 import { escapeRegex } from './utils'
 
 const docTypeNodeOptions: TBasicNodeOptions = {
@@ -82,45 +81,59 @@ const htmlBlockTypes: THTMLBlockDescr[] = [
 const htmlBlockTypesO: Record<THTMLBlockOperations, THTMLBlockDescr> = {} as Record<THTMLBlockOperations, THTMLBlockDescr>
 htmlBlockTypes.forEach(b => htmlBlockTypesO[b.key] = b)
 
-export const getHtmlParser = () => {
-    const rootNode = new BasicNode({ icon: 'ROOT' })
+export const getHtmlParser = (opts: TRewriteHtmlOptions, recognizeTextDirective = false) => {
+    const rootNode = new BasicNode({ icon: 'Html Mode' })
 
     const docTypeNode = new BasicNode(docTypeNodeOptions)
     const cDataNode = new BasicNode(cDataNodeOptions)
     const commentNode = new BasicNode(commentNodeOptions)
 
     const innerNode = new BasicNode(innerNodeOptions)
-    const stringExpressionNode = stringExpressionNodeFactory(['{{', '}}'])
+    const stringExpressionNode = stringExpressionNodeFactory(opts.exprDelimeters)
 
     const attrNode = attributeNodeFactory()
-    const attrBlockOperationNode = attributeNodeFactory('↳', 'v-', 'block')
-    const attrExprNode = attributeNodeFactory('≈', ':', 'expr')
+    const attrBlockOperationNode = attributeNodeFactory('↳', opts.blockOperation, 'block')
+    const attrExprNode = attributeNodeFactory('≈', opts.attrExpression, 'expr')
     const attrNodes = [attrBlockOperationNode, attrExprNode, attrNode]
+
+    const textDirectiveNode = new BasicNode({
+        icon: 'T',
+        tokens: [
+            new RegExp(`^\\s*(?:<!--)${ escapeRegex(opts.directive) }\\s*text-mode-on\\s*-->\\s*$`, 'm'),
+            new RegExp(`^\\s*(?:<!--)${ escapeRegex(opts.directive) }\\s*text-mode-off\\s*-->\\s*$`, 'm'),
+        ],
+        tokenOE: 'omit-omit',
+    })
+        .onMatch(({ parserContext }) => parserContext.jump()) // eating the new line
+        .onPop(({ parserContext }) => parserContext.jump()) // eating the new line
 
     const tagNode = new BasicNode<TTagNodeCustomData>({
         tokens: [
-            /\s*<(?<tag>[\w:\-\.]+)/,
+            /<(?<tag>[\w:\-\.]+)/,
             ({ customData }) => {
-                if (customData.isVoid) return /\/?>/
-                if (customData.isText) return new RegExp(`\\s*<\\/(?<endTag>${ escapeRegex(customData.tag) })\\s*>`)
-                return /(?:\/\>|\<\/(?<endTag>[\w:\-\.]+)\s*\>)/
+                if (customData.isVoid) return /\/?>\s*/
+                if (customData.isText) return new RegExp(`\\s*<\\/(?<endTag>${ escapeRegex(customData.tag) })\\s*>\\s*`)
+                return /(?:\/\>|\<\/(?<endTag>[\w:\-\.]+)\s*\>\s*)/
             },
         ],
     })
         .onMatch(({ context, customData }) => {
             context.icon = customData.tag,
-            customData.isVoid = htmlVoidTags.includes(customData.tag)
-            customData.isText = htmlTextTags.includes(customData.tag)
+            customData.isVoid = opts.voidTags.includes(customData.tag)
+            customData.isText = opts.textTags.includes(customData.tag)
             if (customData.isVoid) {
                 context.clearRecognizes(innerNode)
             }
-            if (customData.isText) {
+            if (customData.isText && !recognizeTextDirective) {
                 context.addAbsorbs(innerNode, 'join')
             }
         })
         .onBeforeChildParse((child, { customData }) => {
             if (customData.isText && child.node === innerNode) {
                 child.clearRecognizes()
+                if (recognizeTextDirective) {
+                    child.addRecognizes(textDirectiveNode)
+                }
                 child.removeOnAppendContent()
                 child.endsWith = {
                     token: new RegExp(`<\\/(?<endTag>${ escapeRegex(customData.tag) })\\s*>`),
@@ -196,12 +209,34 @@ export const getHtmlParser = () => {
             mapRule: 'customData',
         })
 
+    if (recognizeTextDirective) {
+        rootNode.addRecognizes(textDirectiveNode)
+        innerNode.addRecognizes(textDirectiveNode)
+        cDataNode.addRecognizes(textDirectiveNode)
+    }
+
     rootNode.addRecognizes(docTypeNode, commentNode, tagNode, stringExpressionNode)
     innerNode.addRecognizes(commentNode, cDataNode, tagNode, stringExpressionNode)
     commentNode.addRecognizes(stringExpressionNode)
     cDataNode.addRecognizes(stringExpressionNode)
 
-    return getRewriter(rootNode)
+    return {
+        rootNode,
+        innerNode,
+        commentNode,
+        cDataNode,
+        docTypeNode,
+        stringExpressionNode,
+        attrNode,
+        attrBlockOperationNode,
+        attrExprNode,
+        tagNode,
+        textDirectiveNode,
+    }
+}
+
+export const getHtmlRewriter = (opts: TRewriteHtmlOptions, debug = false) => {
+    return getRewriter(getHtmlParser(opts).rootNode, debug)
 }
 
 function attributeNodeFactory(icon = '=', prefix?: string, type: 'plain' | 'block' | 'expr' = 'plain'): BasicNode<TAttrNodeCustomData> {

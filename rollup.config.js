@@ -92,6 +92,7 @@ function createConfig(format, output, plugins = []) {
   output.globals = {
     '@prostojs/parser': 'ProstoParser',
     '@prostojs/tree': 'ProstoTree',
+    'minimatch': '__minimatch',
   }
 
   if (isGlobalBuild) {

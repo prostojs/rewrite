@@ -1,5 +1,6 @@
 import { ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
 import { TProstoRewriter, TProstoRewriteScope, TRewriteNodeType } from './types'
+import { debug as printDebug } from './utils'
 
 export function genSafeFunc(code: string): (scope?: TProstoRewriteScope) => string {
     try {
@@ -47,9 +48,12 @@ export function renderCode(context: ProstoParserNodeContext, level = 1) {
     return result
 }
 
-export function getRewriter(rootNode: ProstoParserNode): TProstoRewriter {
+export function getRewriter(rootNode: ProstoParserNode, debug = false): TProstoRewriter {
     function getCode(source: string): string {
         const result = rootNode.parse(source)
+        if (debug) {
+            printDebug('Parsed tree view:\n' + result.toTree())
+        }
         return 'const __ = []\n' + 
             'let __v = \'\'\n' +
             'with (__ctx__) {\n' +
@@ -76,7 +80,7 @@ export function getRewriter(rootNode: ProstoParserNode): TProstoRewriter {
         genRewriteCode: getCode,
         genRewriteFunction: getFunc,
         printAsTree: print,
-        rewrite: (source: string, scope?: TProstoRewriteScope) => getFunc(source)(scope),
+        rewrite: (source: string, scope?: TProstoRewriteScope) => getFunc(source)(scope || {}),
     }
 }
 

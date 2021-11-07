@@ -1,0 +1,10 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  if (condition) {
+    __.push(`<div `)
+    __.push(`>\n    content\n`)
+    __.push(`</div>`)
+  }
+}
+return __.join('')

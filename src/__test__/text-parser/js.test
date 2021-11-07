@@ -1,0 +1,12 @@
+let myVar = 1
+//=IF (a === b)
+    //=FOR (const i of items)
+//: const item{{ i }} = '{{ i }}' // reveal comment
+        //=IF (c === d)
+myVar += 2
+        //=ELSE
+myVar -= 4
+        //=ENDIF
+    //=END FOR
+//=END IF
+const myVar2 = 2

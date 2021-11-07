@@ -1,0 +1,8 @@
+
+//= IF (a > c)
+//: const a = 'test1'
+// commented line
+//=ELSE
+const b = 'test2'
+//: const c = 'test3 {{ h }}'
+//=ENDIF

@@ -1,0 +1,5 @@
+<div v-if="condition">
+    content
+</div>
+<span v-else-if="condition2" />
+<p v-else> Content 3 </p>

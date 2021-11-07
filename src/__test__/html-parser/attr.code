@@ -1,0 +1,13 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`<div `)
+  __v = a + b
+  if (typeof __v === 'boolean') {
+    if (__v) __.push(`attr`)
+  } else {
+    __.push(`attr="${ (__v || '').replace(/"/g, '&quot;') }"`)
+  }
+  __.push(` />`)
+}
+return __.join('')

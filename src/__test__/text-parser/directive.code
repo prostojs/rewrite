@@ -1,0 +1,12 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`const a = '`)
+  __.push( expression )
+  __.push(`'\n`)
+  __.push(`\nconst b = '{{ expression2 }}'`)
+  __.push(`\nconst c = '`)
+  __.push( expression3 )
+  __.push(`'`)
+}
+return __.join('')

@@ -1,0 +1,6 @@
+let myVar = 1
+const item1 = '1' // reveal comment
+myVar += 2
+const item2 = '2' // reveal comment
+myVar += 2
+const myVar2 = 2

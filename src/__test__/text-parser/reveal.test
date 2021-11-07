@@ -1,0 +1,3 @@
+//: const a = 'test1'
+const b = 'test2'
+//: const c = 'test3'

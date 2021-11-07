@@ -1,0 +1,20 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`<body`)
+  __.push(`>\n    `)
+  for (a of n) {
+    __.push(`<div `)
+    __.push(`>\n    `)
+    __.push(`<script`)
+    __.push(`>\n`)
+    if (a === b) {
+      __.push(`        do this\n        do that\n`)
+    }
+    __.push(`    `)
+    __.push(`</script>\n    `)
+    __.push(`</div>\n`)
+  }
+  __.push(`</body>`)
+}
+return __.join('')

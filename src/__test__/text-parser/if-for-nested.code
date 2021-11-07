@@ -3,24 +3,21 @@ let __v = ''
 with (__ctx__) {
   __.push(`before\n`)
   if (a === b) {
-    __.push(`\n`)
     for (const a of b) {
-      __.push(`\n    do for\n`)
+      __.push(`    do for\n`)
       if (c === d) {
-        __.push(`\n            c === d\n`)
+        __.push(`            c === d\n`)
       } else {
-        __.push(`\n            else `)
+        __.push(`           else `)
         __.push( someExpr.toString() )
         __.push(`\n`)
       }
-      __.push(`\n`)
     }
-    __.push(`\n`)
   }
-  __.push(`\ntext\n`)
+  __.push(`text\n`)
   for (const a of b) {
-    __.push(`\ndo for 2\n`)
+    __.push(`do for 2\n`)
   }
-  __.push(`\nafter\n`)
+  __.push(`after\n`)
 }
 return __.join('')

@@ -1,0 +1,12 @@
+<body>
+    <div v-for="a of n">
+    <script>
+    <!--!@ text-mode-on -->
+        //=IF (a === b)
+        do this
+        do that
+        //=ENDIF
+    <!--!@ text-mode-off -->
+    </script>
+    </div>
+</body>

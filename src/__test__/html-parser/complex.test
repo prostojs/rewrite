@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My test page</title>
+    <!-- First Comment -->
+</head>
+<body>
+    <!-- <div>commented div {{ value }}: {{ item.toUpperCase() }} </div> -->
+    <img src="images/firefox-icon.png" :alt="'My test image ' + url">
+    <div v-for="item of items">
+        <a :href="item" />
+        {{ item + 'string' }}
+    </div>
+    <span v-if="condition" :class=""> condition <strong>1</strong> end of {{ some.value }} </span>
+    <span v-else-if="a === 5"> condition 2 </span>
+    <span v-else> condition 3 </span>
+    <div 
+        dense="ab" de=""
+        :data-id="d.id"
+        :data-count="d.count"
+        :data-weight="d.w"
+        :class="white ? 'white' : 'bg-white'"
+    >
+    {{ 'so good 25 \\' }}' }}
+    </div>
+</body>
+</html>

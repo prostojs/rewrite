@@ -1,0 +1,13 @@
+const __ = []
+let __v = ''
+with (__ctx__) {
+  __.push(`<div `)
+  __.push(`test="abc"`)
+  __.push(` `)
+  __.push(`unqouted="cde"`)
+  __.push(`>\n    `)
+  __.push(`<span/>`)
+  __.push(`\n`)
+  __.push(`</div>`)
+}
+return __.join('')

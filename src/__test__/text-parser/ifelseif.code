@@ -2,11 +2,11 @@ const __ = []
 let __v = ''
 with (__ctx__) {
   if (a === b) {
-    __.push(`\n    do this\n`)
+    __.push(`    do this\n`)
   } else if (b === c) {
-    __.push(`\n    do that\n`)
+    __.push(`   do that\n`)
   } else {
-    __.push(`\n    do other\n`)
+    __.push(`   do other\n`)
   }
 }
 return __.join('')

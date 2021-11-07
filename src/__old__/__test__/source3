@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-const fs = require('fs')
-
-// @rw:no-interpolate-next-line
-const a = '{{= some.var =}}'
-const b = '{{= some.var =}}'
