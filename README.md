@@ -143,9 +143,9 @@ By default html template uses vue-like syntax.
 
 ### TEXT & HTML
 
-By default `ProstoRewrite` supports both: text and html modes and the same time. The default mode is controled by the [options](#options).
+By default `ProstoRewrite` supports both: text and html modes at the same time. The default mode is controled by the [options](#options).
 
-If you want to switch to html mode in the middle of text file you can use the following instruction:
+If you want to switch to html mode in the middle of the text source you can use the following instruction:
 
 `//!@html-mode-on` or `#!@html-mode-on`
 
@@ -153,7 +153,7 @@ And to switch back use:
 
 `//!@html-mode-off` or `#!@html-mode-off`
 
-If you want to switch to text mode in the middle of html file you can use the following instruction:
+If you want to switch to text mode in the middle of the html source you can use the following instruction:
 
 `<!--!@text-mode-on-->`
 
@@ -197,7 +197,7 @@ Options object is totally optional. The example below demonstrates the default v
 const rw = new ProstoRewrite({
     defaultMode: 'auto',    // text | html | auto
     debug: false,
-    htmlPattern: ['*.{html,xhtml,xml,svg}']
+    htmlPattern: ['*.{html,xhtml,xml,svg}'],
     textPattern: [
                     '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
                     'Dockerfile',
@@ -205,7 +205,7 @@ const rw = new ProstoRewrite({
                     '.gitignore',
                 ],
     html: {
-        exprDelimeters: ['{{', '}}']
+        exprDelimeters: ['{{', '}}'],
         attrExpression: ':',
         blockOperation: 'v-',
         directive: '!@',
@@ -230,7 +230,7 @@ const rw = new ProstoRewrite({
         textTags: ['script', 'style'],
     },
     text: {
-        exprDelimeters: ['{{', '}}']
+        exprDelimeters: ['{{', '}}'],
         blockOperation: '=',
         revealLine: ':',
         directive: '!@',
