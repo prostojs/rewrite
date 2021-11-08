@@ -1,3 +1,12 @@
+## [0.0.4](https://github.com/prostojs/rewrite/compare/v0.0.3...v0.0.4) (2021-11-08)
+
+
+### Bug Fixes
+
+* escape escape slashes in string ([00f8b19](https://github.com/prostojs/rewrite/commit/00f8b192191a01cc3281b6893616d053a1c76b7f))
+
+
+
 ## [0.0.3](https://github.com/prostojs/rewrite/compare/v0.0.2...v0.0.3) (2021-11-08)
 
 
