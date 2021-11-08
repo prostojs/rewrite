@@ -1,3 +1,13 @@
+## [0.0.2](https://github.com/prostojs/rewrite/compare/v0.0.1...v0.0.2) (2021-11-08)
+
+
+### Features
+
+* add String Expression Rewriter ([41ec27e](https://github.com/prostojs/rewrite/commit/41ec27ef23c7767533f59da375f0357129dea932))
+* add String Expression Rewriter ([b4674e4](https://github.com/prostojs/rewrite/commit/b4674e4fe8682387b60659477421752575d5c89c))
+
+
+
 ## 0.0.1 (2021-11-08)
 
 
