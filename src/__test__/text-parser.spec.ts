@@ -62,7 +62,13 @@ describe('text-parser', () => {
   it('must rewrite "tricky-string"', () => {
       const name = 'tricky-string'
       const result = tp.rewrite(testFile(name), { a: 1, b: 1, c: 2, d: 2, items: [1,2]})
-      saveCodeFile(name, result)
+    //   saveCodeFile(name, result)
+      expect(result).toEqual(codeFile(name))
+  })
+  it('must rewrite "json"', () => {
+      const name = 'json'
+      const result = tp.rewrite(testFile(name), { a: 1, b: 1, c: 2, d: 2, items: [1,2]})
+    //   saveCodeFile(name, result)
       expect(result).toEqual(codeFile(name))
   })
 })

@@ -14,8 +14,10 @@ export function genSafeFunc(code: string): (context?: TProstoRewriteContext) => 
     }
 }
 
+function escapeString(s: string): string { return s.replace(/\\/g, '\\\\').replace(/`/g,'\\`').replace(/\n/g, '\\n').replace(/\$/g, '\\$') }
+
 export function pushString(s: string): string {
-    return `__ += \`${ s.replace(/`/g,'\\`').replace(/\n/g, '\\n').replace(/\$/g, '\\$') }\`\n`
+    return `__ += \`${ escapeString(s) }\`\n`
 }
 
 export function renderCode(context: ProstoParserNodeContext, level = 1) {
@@ -112,7 +114,7 @@ export function getStringExpressionRewriter(interpolationDelimiters: [string, st
         return 'let __ = []\n' +
             'with (__ctx__) {\n' +
             result.content.map(c => `__.push(${ typeof c === 'string' 
-                ? `'${ c.replace(/\n/g, '\\n').replace(/'/g, '\\\'').replace(/\$/g, '\\$') }'` 
+                ? `\`${ escapeString(c) }\`` 
                 : `${ c.getCustomData<TStringExpressionData>().expression }` })`).join('\n  ') +
             '}\n' +
             'return __.length === 1 ? __[0] : __.join(\'\')'
