@@ -1,10 +1,10 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   if (condition) {
-    __.push(`<div `)
-    __.push(`>\n    content\n`)
-    __.push(`</div>`)
+    __ += `<div `
+    __ += `>\n    content\n`
+    __ += `</div>`
   }
 }
-return __.join('')
+return __

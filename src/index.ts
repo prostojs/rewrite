@@ -3,7 +3,7 @@ import { copyFile, pathJoin, pathResolve, readDir, readFile, writeFile } from '.
 import { getRewriter } from './rw-common'
 import { getHtmlParser, getHtmlRewriter } from './rw-html-parser'
 import { getTextParser, getTextRewriter } from './rw-text-parser'
-import { TProstoRewriteScope, TRewriteCommonOptions, TRewriteDirOptions, TRewriteFileOptions, TRewriteMode, TRewriteOptions, TRewriteOptionsPublic } from './types'
+import { TProstoRewriteContext, TRewriteCommonOptions, TRewriteDirOptions, TRewriteFileOptions, TRewriteMode, TRewriteOptions, TRewriteOptionsPublic } from './types'
 import minimatch from 'minimatch'
 import { debug } from './utils'
 
@@ -61,14 +61,14 @@ export class ProstoRewrite {
         return getHtmlRewriter(this.options.html, this.options.debug)
     }
 
-    public async rewriteFile(opts: TRewriteFileOptions, scope?: TProstoRewriteScope) {
+    public async rewriteFile(opts: TRewriteFileOptions, context?: TProstoRewriteContext) {
         const file = await readFile(opts.input)
         const mode = this.determineMode(opts.mode || this.options.defaultMode, opts.input, file)
         let output = file
         const modes = this.mixedRewriter
         if (mode) {
             this.debug('Parsing file in ' + mode + ' mode. ' + __DYE_UNDERSCORE__ + __DYE_BOLD_OFF__ + opts.input)
-            output = modes[mode].rewrite(file, scope)
+            output = modes[mode].rewrite(file, context)
         } else {
             this.debug('File isn\'t recognized as text nor as html. ' + __DYE_UNDERSCORE__ + __DYE_BOLD_OFF__ + opts.input)
         }
@@ -84,7 +84,7 @@ export class ProstoRewrite {
         return output
     }
 
-    public async rewriteDir(opts: TRewriteDirOptions, scope?: TProstoRewriteScope) {
+    public async rewriteDir(opts: TRewriteDirOptions, context?: TProstoRewriteContext) {
         if (__BROWSER__) return
         const files = await readDir(opts.baseDir)
         const dirPath = await pathResolve(opts.baseDir)
@@ -105,7 +105,7 @@ export class ProstoRewrite {
                 mode: opts.mode,
                 input: filePath,
                 output: targetPath,
-            }, scope)
+            }, context)
             if (opts.onFile) {
                 opts.onFile(filePath, output)
             }

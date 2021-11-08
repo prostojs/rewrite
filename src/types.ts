@@ -50,12 +50,12 @@ export interface THTMLBlockDescr {
 
 export interface TProstoRewriter {
     genRewriteCode: (source: string) => string
-    genRewriteFunction: (source: string) => (scope?: TProstoRewriteScope) => string
+    genRewriteFunction: (source: string) => (context?: TProstoRewriteContext) => string
     printAsTree: (source: string) => void
-    rewrite: (source: string, scope?: TProstoRewriteScope) => string
+    rewrite: (source: string, context?: TProstoRewriteContext) => string
 }
 
-export type TProstoRewriteScope = Record<string, unknown>
+export type TProstoRewriteContext = Record<string, unknown>
 
 export interface TRewriteCommonOptions {
     exprDelimeters: [string, string]

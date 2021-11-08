@@ -31,7 +31,7 @@ const { ProstoRewrite } = require('@prostojs/rewrite')
 const rw = new ProstoRewrite()
 main()
 async function main() {
-    const scope = { a: 1 } // scope object for templates interpolation
+    const context = { a: 1 } // context object for templates interpolation
 
     // rewrite a single file
     const renderedContent = await rw.rewriteFile({
@@ -40,7 +40,7 @@ async function main() {
         // optional:
         output: 'path/to/rewrite/filename.js',
         mode: 'auto',   // text | html | auto
-    }, scope)
+    }, context)
 
     // rewrite files in directory
     await rw.rewriteDir({
@@ -54,7 +54,7 @@ async function main() {
         onFile: (path, output) => {
             console.log('Result for file ' + path + '\n' + output)
         }
-    }, scope)
+    }, context)
 }
 ```
 
@@ -76,11 +76,11 @@ Text template consists of:
 **Operation blocks*** **:**
 Key | Example | Description
 ---|---|---
-`IF`|`//=IF(condition)` or `#=IF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `scope` vars.
-`ELSEIF`**|`//=ELSEIF(condition)` or `#=ELSEIF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `scope` vars. Must be used after `IF` or `ELSEIF` operation block.
+`IF`|`//=IF(condition)` or `#=IF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `context` vars.
+`ELSEIF`**|`//=ELSEIF(condition)` or `#=ELSEIF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `context` vars. Must be used after `IF` or `ELSEIF` operation block.
 `ELSE`|`//=ELSE` or `#=ELSE`|WIll add the lines below only if the previous conditions didn't match. Must be used after `IF` or `ELSEIF` operation block.
 `ENDIF`**|`//=ENDIF` or `#=ENDIF`|Ends the `IF` blocks series.
-`FOR`|`//=FOR(a of b)` or `#=FOR(a of b)`|Will iterate through the loop. The `a of b` part must be a valid javascript loop expression and can use `scope` vars.
+`FOR`|`//=FOR(a of b)` or `#=FOR(a of b)`|Will iterate through the loop. The `a of b` part must be a valid javascript loop expression and can use `context` vars.
 `ENDFOR`**|`//=ENDFOR` or `#=ENDFOR`|Ends the `FOR` block.
 
 *The operation block can have spaces before it and after it, but it must take only one line. All the operation blocks can start with `#` as well as with `//`
@@ -97,7 +97,7 @@ Key|Example|Description
 
 **Reveal comments:** the line prefixed with `reveal comment` prefix will be rendered as **uncommented** line. Use this when needed to keep the source file syntatically valid.
 
-**String expressions:** vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the scope vars.
+**String expressions:** vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the context vars.
 
 **Example:**
 
@@ -117,7 +117,7 @@ myVar -= 4
 const myVar2 = 2
 ```
 
-Will be rewritten with scope = `{ a: 1, b: 1, c: 2, d: 2, items: [1, 2] }`:
+Will be rewritten with context = `{ a: 1, b: 1, c: 2, d: 2, items: [1, 2] }`:
 ```js
 let myVar = 1
 const item1 = '1' // reveal comment
@@ -139,7 +139,7 @@ By default html template uses vue-like syntax.
 - `v-else-if="..."`: attribute for conditional rendering of the node. Expression must be a valid javascript condition expression.
 - `v-else`: attribute for conditional rendering of the node.
 - `:<attr_name>="..."`: expression as attribute value. Expression must be a valid javascript code that returns string/boolean or anything that casts to a string/boolean. If the expression result is type of boolean, the attribute will have no value and will be hidden if the result equals `false`.
-- `{{ ... }}`: vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the scope vars.
+- `{{ ... }}`: vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the context vars.
 
 ### TEXT & HTML
 
@@ -272,12 +272,12 @@ const hrw = rw.htmlRewriter     // rewriter that can parse only html
 const mrw = rw.mixedRewriter    // rewriter that can parse both
 // source for text rewriter:
 const source = '//=IF (a === 1)\nconst a = 1'
-const scope = { a: 1 }
+const context = { a: 1 }
 // each rewriter has the same interface:
 trw.genRewriteCode(source)      // returns rendered function source code
 trw.genRewriteFunction(source)  // returns rewrite-function
 trw.printAsTree(source)         // prints parsed source as a tree
-trw.rewrite(source, scope)      // renders the source with scope
+trw.rewrite(source, context)      // renders the source with context
 ```
 
 If you're going to use one template file for multiple renders it makes sense to cache its rewrite-function:
@@ -287,7 +287,7 @@ If you're going to use one template file for multiple renders it makes sense to 
 const rw = new ProstoRewrite()
 const trw = rw.textRewriter
 const rewriteFunc = trw.genRewriteFunction(source)
-const result1 = rewriteFunc(scope1)
-const result2 = rewriteFunc(scope2)
-const result3 = rewriteFunc(scope3)
+const result1 = rewriteFunc(context1)
+const result2 = rewriteFunc(context2)
+const result3 = rewriteFunc(context3)
 ```

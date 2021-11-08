@@ -1,10 +1,10 @@
 import { ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
-import { TProstoRewriter, TProstoRewriteScope, TRewriteNodeType } from './types'
+import { TProstoRewriter, TProstoRewriteContext, TRewriteNodeType } from './types'
 import { debug as printDebug } from './utils'
 
-export function genSafeFunc(code: string): (scope?: TProstoRewriteScope) => string {
+export function genSafeFunc(code: string): (context?: TProstoRewriteContext) => string {
     try {
-        return new Function('__ctx__', 'process', 'window', 'global', 'require', code) as (scope?: TProstoRewriteScope) => string
+        return new Function('__ctx__', 'process', 'window', 'global', 'require', code) as (context?: TProstoRewriteContext) => string
     } catch(e) {
         console.error((e as Error).message)
         console.error((e as Error).stack)
@@ -13,7 +13,7 @@ export function genSafeFunc(code: string): (scope?: TProstoRewriteScope) => stri
 }
 
 export function pushString(s: string): string {
-    return `__.push(\`${ s.replace(/`/g,'\\`').replace(/\n/g, '\\n') }\`)\n`
+    return `__ += \`${ s.replace(/`/g,'\\`').replace(/\n/g, '\\n') }\`\n`
 }
 
 export function renderCode(context: ProstoParserNodeContext, level = 1) {
@@ -54,19 +54,19 @@ export function getRewriter(rootNode: ProstoParserNode, debug = false): TProstoR
         if (debug) {
             printDebug('Parsed tree view:\n' + result.toTree())
         }
-        return 'const __ = []\n' + 
+        return 'let __ = \'\'\n' + 
             'let __v = \'\'\n' +
             'with (__ctx__) {\n' +
             renderCode(result) +
             '}\n' +
-            'return __.join(\'\')'
+            'return __'
     }
     function getFunc(source: string) {
         const code = getCode(source)
         const func = genSafeFunc(code)
-        return (scope?: TProstoRewriteScope) => {
+        return (context?: TProstoRewriteContext) => {
             try {
-                return func(scope)
+                return func(context)
             } catch (e) {
                 throwErrorFromFunction(e as Error, code)
             }
@@ -80,7 +80,7 @@ export function getRewriter(rootNode: ProstoParserNode, debug = false): TProstoR
         genRewriteCode: getCode,
         genRewriteFunction: getFunc,
         printAsTree: print,
-        rewrite: (source: string, scope?: TProstoRewriteScope) => getFunc(source)(scope || {}),
+        rewrite: (source: string, context?: TProstoRewriteContext) => getFunc(source)(context || {}),
     }
 }
 

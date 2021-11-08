@@ -1,8 +1,8 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
-  __.push(`const a = 'test1'`)
-  __.push(`\nconst b = 'test2'\n`)
-  __.push(`const c = 'test3'`)
+  __ += `const a = 'test1'`
+  __ += `\nconst b = 'test2'\n`
+  __ += `const c = 'test3'`
 }
-return __.join('')
+return __

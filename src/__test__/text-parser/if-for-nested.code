@@ -1,23 +1,23 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
-  __.push(`before\n`)
+  __ += `before\n`
   if (a === b) {
     for (const a of b) {
-      __.push(`    do for\n`)
+      __ += `    do for\n`
       if (c === d) {
-        __.push(`            c === d\n`)
+        __ += `            c === d\n`
       } else {
-        __.push(`           else `)
-        __.push( someExpr.toString() )
-        __.push(`\n`)
+        __ += `           else `
+        __ += someExpr.toString()
+        __ += `\n`
       }
     }
   }
-  __.push(`text\n`)
+  __ += `text\n`
   for (const a of b) {
-    __.push(`do for 2\n`)
+    __ += `do for 2\n`
   }
-  __.push(`after\n`)
+  __ += `after\n`
 }
-return __.join('')
+return __

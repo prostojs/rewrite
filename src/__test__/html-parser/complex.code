@@ -1,119 +1,119 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
-  __.push(`<!DOCTYPE html>`)
-  __.push(`\n`)
-  __.push(`<html`)
-  __.push(`>\n`)
-  __.push(`<head`)
-  __.push(`>\n    `)
-  __.push(`<meta `)
-  __.push(`charset="utf-8"`)
-  __.push(`>\n    `)
-  __.push(`<title`)
-  __.push(`>My test page`)
-  __.push(`</title>\n    `)
-  __.push(`<!-- First Comment -->`)
-  __.push(`\n`)
-  __.push(`</head>\n`)
-  __.push(`<body`)
-  __.push(`>\n    `)
-  __.push(`<!-- <div>commented div `)
-  __.push( value )
-  __.push(`: `)
-  __.push( item.toUpperCase() )
-  __.push(` </div> -->`)
-  __.push(`\n    `)
-  __.push(`<img `)
-  __.push(`src="images/firefox-icon.png"`)
-  __.push(` `)
+  __ += `<!DOCTYPE html>`
+  __ += `\n`
+  __ += `<html`
+  __ += `>\n`
+  __ += `<head`
+  __ += `>\n    `
+  __ += `<meta `
+  __ += `charset="utf-8"`
+  __ += `>\n    `
+  __ += `<title`
+  __ += `>My test page`
+  __ += `</title>\n    `
+  __ += `<!-- First Comment -->`
+  __ += `\n`
+  __ += `</head>\n`
+  __ += `<body`
+  __ += `>\n    `
+  __ += `<!-- <div>commented div `
+  __ += value
+  __ += `: `
+  __ += item.toUpperCase()
+  __ += ` </div> -->`
+  __ += `\n    `
+  __ += `<img `
+  __ += `src="images/firefox-icon.png"`
+  __ += ` `
   __v = 'My test image ' + url
   if (typeof __v === 'boolean') {
-    if (__v) __.push(`alt`)
+    if (__v) __ += `alt`
   } else {
-    __.push(`alt="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    __ += `alt="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __.push(`>\n    `)
+  __ += `>\n    `
   for (item of items) {
-    __.push(`<div `)
-    __.push(`>\n        `)
-    __.push(`<a `)
+    __ += `<div `
+    __ += `>\n        `
+    __ += `<a `
     __v = item
     if (typeof __v === 'boolean') {
-      if (__v) __.push(`href`)
+      if (__v) __ += `href`
     } else {
-      __.push(`href="${ (__v || '').replace(/"/g, '&quot;') }"`)
+      __ += `href="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __.push(` />`)
-    __.push(`\n        `)
-    __.push( item + 'string' )
-    __.push(`\n    `)
-    __.push(`</div>\n    `)
+    __ += ` />`
+    __ += `\n        `
+    __ += item + 'string'
+    __ += `\n    `
+    __ += `</div>\n    `
   }
   if (condition) {
-    __.push(`<span `)
-    __.push(` `)
+    __ += `<span `
+    __ += ` `
     __v = ''
     if (typeof __v === 'boolean') {
-      if (__v) __.push(`class`)
+      if (__v) __ += `class`
     } else {
-      __.push(`class="${ (__v || '').replace(/"/g, '&quot;') }"`)
+      __ += `class="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __.push(`> condition `)
-    __.push(`<strong`)
-    __.push(`>1`)
-    __.push(`</strong> `)
-    __.push(`end of `)
-    __.push( some.value )
-    __.push(` `)
-    __.push(`</span>\n    `)
+    __ += `> condition `
+    __ += `<strong`
+    __ += `>1`
+    __ += `</strong> `
+    __ += `end of `
+    __ += some.value
+    __ += ` `
+    __ += `</span>\n    `
   } else if (a === 5) {
-    __.push(`<span `)
-    __.push(`> condition 2 `)
-    __.push(`</span>\n    `)
+    __ += `<span `
+    __ += `> condition 2 `
+    __ += `</span>\n    `
   } else {
-    __.push(`<span `)
-    __.push(`> condition 3 `)
-    __.push(`</span>\n    `)
+    __ += `<span `
+    __ += `> condition 3 `
+    __ += `</span>\n    `
   }
-  __.push(`<div \n        `)
-  __.push(`dense="ab"`)
-  __.push(` `)
-  __.push(`de`)
-  __.push(`\n        `)
+  __ += `<div \n        `
+  __ += `dense="ab"`
+  __ += ` `
+  __ += `de`
+  __ += `\n        `
   __v = d.id
   if (typeof __v === 'boolean') {
-    if (__v) __.push(`data-id`)
+    if (__v) __ += `data-id`
   } else {
-    __.push(`data-id="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    __ += `data-id="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __.push(`\n        `)
+  __ += `\n        `
   __v = d.count
   if (typeof __v === 'boolean') {
-    if (__v) __.push(`data-count`)
+    if (__v) __ += `data-count`
   } else {
-    __.push(`data-count="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    __ += `data-count="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __.push(`\n        `)
+  __ += `\n        `
   __v = d.w
   if (typeof __v === 'boolean') {
-    if (__v) __.push(`data-weight`)
+    if (__v) __ += `data-weight`
   } else {
-    __.push(`data-weight="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    __ += `data-weight="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __.push(`\n        `)
+  __ += `\n        `
   __v = white ? 'white' : 'bg-white'
   if (typeof __v === 'boolean') {
-    if (__v) __.push(`class`)
+    if (__v) __ += `class`
   } else {
-    __.push(`class="${ (__v || '').replace(/"/g, '&quot;') }"`)
+    __ += `class="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __.push(`\n    `)
-  __.push(`>\n    `)
-  __.push( 'so good 25 \\' )
-  __.push(`' }}\n    `)
-  __.push(`</div>\n`)
-  __.push(`</body>\n`)
-  __.push(`</html>`)
+  __ += `\n    `
+  __ += `>\n    `
+  __ += 'so good 25 \\'
+  __ += `' }}\n    `
+  __ += `</div>\n`
+  __ += `</body>\n`
+  __ += `</html>`
 }
-return __.join('')
+return __

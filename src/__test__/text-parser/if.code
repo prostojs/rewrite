@@ -1,8 +1,8 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   if (a === b) {
-    __.push(`    do this\n    do that\n`)
+    __ += `    do this\n    do that\n`
   }
 }
-return __.join('')
+return __

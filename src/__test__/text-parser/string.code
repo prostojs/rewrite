@@ -1,8 +1,8 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
-  __.push(`before`)
-  __.push(left + 'string }}' + right)
-  __.push(`after`)
+  __ += `before`
+  __ += left + 'string }}' + right
+  __ += `after`
 }
-return __.join('')
+return __

@@ -272,9 +272,9 @@ function attributeNodeFactory(icon = '=', prefix?: string, type: 'plain' | 'bloc
             const indent = ' '.repeat(level * 2)
             let s = indent + '__v = ' + (value as string || '\'\'') + '\n'
             s += indent + 'if (typeof __v === \'boolean\') {\n'
-            s += indent + `  if (__v) __.push(\`${ key }\`)\n`
+            s += indent + `  if (__v) __ += \`${ key }\`\n`
             s += indent + '} else {\n'
-            s += indent + `  __.push(\`${ key }=${ q }` + '${' +` (__v || '').replace(/${ q }/g, '${ quoteEsc[q] }') }${ q }\`)\n`
+            s += indent + `  __ += \`${ key }=${ q }` + '${' +` (__v || '').replace(/${ q }/g, '${ quoteEsc[q] }') }${ q }\`\n`
             s += indent + '}\n'
             return s
         },

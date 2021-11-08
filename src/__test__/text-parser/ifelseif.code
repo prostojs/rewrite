@@ -1,12 +1,12 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   if (a === b) {
-    __.push(`    do this\n`)
+    __ += `    do this\n`
   } else if (b === c) {
-    __.push(`   do that\n`)
+    __ += `   do that\n`
   } else {
-    __.push(`   do other\n`)
+    __ += `   do other\n`
   }
 }
-return __.join('')
+return __

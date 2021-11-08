@@ -1,18 +1,18 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   if (condition) {
-    __.push(`<div `)
-    __.push(`>\n    content\n`)
-    __.push(`</div>\n`)
+    __ += `<div `
+    __ += `>\n    content\n`
+    __ += `</div>\n`
   } else if (condition2) {
-    __.push(`<span `)
-    __.push(` />`)
-  __.push(`\n`)
+    __ += `<span `
+    __ += ` />`
+  __ += `\n`
   } else {
-    __.push(`<p `)
-    __.push(`> Content 3 `)
-    __.push(`</p>`)
+    __ += `<p `
+    __ += `> Content 3 `
+    __ += `</p>`
   }
 }
-return __.join('')
+return __

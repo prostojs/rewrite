@@ -1,8 +1,8 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   for (a of b) {
-    __.push(`    do this\n    do that\n`)
+    __ += `    do this\n    do that\n`
   }
 }
-return __.join('')
+return __

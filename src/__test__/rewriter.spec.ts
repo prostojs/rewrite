@@ -4,7 +4,7 @@ import { ProstoRewrite } from '..'
 
 const rw = new ProstoRewrite({ debug: false })
 
-const scope = {
+const context = {
     classes: {
         red: 'color-red',
     },
@@ -17,7 +17,7 @@ describe('rewriter', () => {
         await rw.rewriteDir({
             baseDir: inputPath(),
             output: outputPath(),
-        }, scope)
+        }, context)
     })
 
     it('must rewrite plain.html file', () => {

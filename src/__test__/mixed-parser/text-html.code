@@ -1,26 +1,26 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
-  __.push(`// text part\n`)
+  __ += `// text part\n`
   if (a === b) {
-    __.push(`const a = '1'\n`)
+    __ += `const a = '1'\n`
   }
   for (a ob n) {
-    __.push(`<div `)
-    __.push(`>\n    `)
-    __.push(`<span `)
+    __ += `<div `
+    __ += `>\n    `
+    __ += `<span `
     __v = c + d
     if (typeof __v === 'boolean') {
-      if (__v) __.push(`data`)
+      if (__v) __ += `data`
     } else {
-      __.push(`data="${ (__v || '').replace(/"/g, '&quot;') }"`)
+      __ += `data="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __.push(` />`)
-    __.push(`\n`)
-    __.push(`</div>\n`)
+    __ += ` />`
+    __ += `\n`
+    __ += `</div>\n`
   }
   if (b === c) {
-    __.push(`const b = '2'\n`)
+    __ += `const b = '2'\n`
   }
 }
-return __.join('')
+return __

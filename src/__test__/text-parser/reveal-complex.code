@@ -1,15 +1,15 @@
-const __ = []
+let __ = ''
 let __v = ''
 with (__ctx__) {
   if (a > c) {
-    __.push(`const a = 'test1'`)
-    __.push(`\n// commented line\n`)
+    __ += `const a = 'test1'`
+    __ += `\n// commented line\n`
   } else {
-    __.push(`onst b = 'test2'\n`)
-    __.push(`const c = 'test3 `)
-    __.push( h )
-    __.push(`'`)
-    __.push(`\n`)
+    __ += `onst b = 'test2'\n`
+    __ += `const c = 'test3 `
+    __ += h
+    __ += `'`
+    __ += `\n`
   }
 }
-return __.join('')
+return __
