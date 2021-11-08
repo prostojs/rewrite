@@ -1,3 +1,12 @@
+## [0.0.3](https://github.com/prostojs/rewrite/compare/v0.0.2...v0.0.3) (2021-11-08)
+
+
+### Bug Fixes
+
+* tricky string expression ([5d3369b](https://github.com/prostojs/rewrite/commit/5d3369b5d0a558d3320bf2db0970c6143aea810e))
+
+
+
 ## [0.0.2](https://github.com/prostojs/rewrite/compare/v0.0.1...v0.0.2) (2021-11-08)
 
 
