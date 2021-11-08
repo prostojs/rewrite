@@ -26,7 +26,6 @@ export function stringExpressionNodeFactory(interpolationDelimiters: [string, st
             }
         })
         .initCustomData(() => ({
-            type: 'StringExpression',
             expression: '',
             code: ({ customData }, level = 0) => ' '.repeat(level * 2) + `__ += ${ customData.expression.trim() }\n`,
         }))

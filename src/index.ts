@@ -3,9 +3,12 @@ import { copyFile, pathJoin, pathResolve, readDir, readFile, writeFile } from '.
 import { getRewriter } from './rw-common'
 import { getHtmlParser, getHtmlRewriter } from './rw-html-parser'
 import { getTextParser, getTextRewriter } from './rw-text-parser'
-import { TProstoRewriteContext, TRewriteCommonOptions, TRewriteDirOptions, TRewriteFileOptions, TRewriteMode, TRewriteOptions, TRewriteOptionsPublic } from './types'
+import { TProstoRewriteContext, TRewriteCommonOptions, TRewriteDirOptions,
+    TRewriteFileOptions, TRewriteMode, TRewriteOptions, TRewriteOptionsPublic } from './types'
 import minimatch from 'minimatch'
 import { debug } from './utils'
+export * from './types'
+export * from './rw-common'
 
 const defaultDelimeters: TRewriteCommonOptions['exprDelimeters'] = ['{{', '}}']
 

@@ -1,4 +1,6 @@
-import { ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
+import { BasicNode, ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
+import { TStringExpressionData } from '.'
+import { stringExpressionNodeFactory } from './string-expression'
 import { TProstoRewriter, TProstoRewriteContext, TRewriteNodeType } from './types'
 import { debug as printDebug } from './utils'
 
@@ -99,4 +101,41 @@ function throwErrorFromFunction(e: Error, code: string): never {
         console.error(output)
     }
     throw e
+}
+
+export function getStringExpressionRewriter(interpolationDelimiters: [string, string] = ['{{', '}}']) {
+    const stringExpression = stringExpressionNodeFactory(interpolationDelimiters)
+    const rootNode = new BasicNode({}).addRecognizes(stringExpression)
+    
+    function getCode(source: string): string {
+        const result = rootNode.parse(source)
+        return 'let __ = []\n' +
+            'with (__ctx__) {\n' +
+            result.content.map(c => `__.push(${ typeof c === 'string' 
+                ? `'${ c.replace(/\n/g, '\\n').replace(/'/g, '\\\'') }'` 
+                : `${ c.getCustomData<TStringExpressionData>().expression }` })`).join('\n  ') +
+            '}\n' +
+            'return __.length === 1 ? __[0] : __.join(\'\')'
+    }
+    function getFunc(source: string) {
+        const code = getCode(source)
+        const func = genSafeFunc(code)
+        return (context?: TProstoRewriteContext) => {
+            try {
+                return func(context)
+            } catch (e) {
+                throwErrorFromFunction(e as Error, code)
+            }
+        }
+    }
+    function print(source: string) {
+        return console.log(rootNode.parse(source).toTree())
+    }
+
+    return {
+        genRewriteCode: getCode,
+        genRewriteFunction: getFunc,
+        printAsTree: print,
+        rewrite: (source: string, context?: TProstoRewriteContext) => getFunc(source)(context || {}),
+    }
 }
