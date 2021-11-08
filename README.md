@@ -291,3 +291,59 @@ const result1 = rewriteFunc(context1)
 const result2 = rewriteFunc(context2)
 const result3 = rewriteFunc(context3)
 ```
+
+Besides those there is one more **String Expression Rewriter** comes as a _bonus_.
+
+It is can parse only string expressions and preserves the expression type if its source consists only from an expression. When the source has some surrounding string(s) it will cast the expression to string type.
+
+This kind of rewriter may be usefull when working with some configuration files that can have expressions as properties values.
+
+**Usage example**
+```js
+import { getStringExpressionRewriter } from '@prostojs/rewrite'
+
+const srw = getStringExpressionRewriter()
+
+// the source has surrounding strings and the expression
+// will be casted to string type as well:
+console.log(srw.rewrite('before {{ a }} after', { a: 5 }))
+// output:
+// 'before 5 after'
+
+// the source consists only of a single expression
+// therefore its type will be preserved:
+console.log(srw.rewrite('{{ a }}', { a: 5 }) === 5 )
+// output:
+// true
+```
+
+**Configuraton example**
+
+Let's assume that we want a config that must store some path generation logic. We can not store function as we're supposed to store the config to DB. We can use a string expression like so:
+
+```js
+import { getStringExpressionRewriter } from '@prostojs/rewrite'
+
+const srw = getStringExpressionRewriter()
+
+const config = {
+    path: 'some/path/{{ key.toLowerCase() }}.{{ type === \'javascript\' ? \'js\' : \'json\' }}'
+}
+
+const context = {
+    key: 'TEST',
+    type: 'javascript',
+}
+
+// caching the rewrite function for path
+// to avoid parsing the path string every time
+const pathFunc = srw.genRewriteFunction(config.path)
+
+// rewriting the config path
+const thePath = pathFunc(context)
+
+console.log(thePath)
+// output:
+// 'some/path/test.js'
+
+```
