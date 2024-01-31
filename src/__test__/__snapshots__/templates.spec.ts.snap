@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`templates must rewrite dir 1`] = `
+"<!DOCTYPE html>
+<html>
+    <head>
+        <script src="http://test">
+        </script>
+    </head>
+    <body>
+        <div >
+            item1
+        </div>
+    <div >
+            item2
+        </div>
+    </body>
+</html>"
+`;
+
+exports[`templates must rewrite dir 2`] = `
+"const val = 'http://test'
+"
+`;
+
+exports[`templates must rewrite dir 3`] = `
+"{
+    "toBeRenamed": true
+}"
+`;

@@ -5,7 +5,7 @@ import { getHtmlParser, getHtmlRewriter } from './rw-html-parser'
 import { getTextParser, getTextRewriter } from './rw-text-parser'
 import { TProstoRewriteContext, TRewriteCommonOptions, TRewriteDirOptions,
     TRewriteFileOptions, TRewriteMode, TRewriteOptions, TRewriteOptionsPublic } from './types'
-import minimatch from 'minimatch'
+import { Minimatch } from 'minimatch'
 import { debug } from './utils'
 export * from './types'
 export * from './rw-common'
@@ -19,13 +19,13 @@ export class ProstoRewrite {
         this.options = {
             defaultMode: options?.defaultMode || 'auto',
             debug: options?.debug || false,
-            htmlPattern: __NODE_JS__ ? (options?.htmlPattern || ['*.{html,xhtml,xml,svg}']).map(p => new minimatch.Minimatch(p, { matchBase: true })) : [],
+            htmlPattern: __NODE_JS__ ? (options?.htmlPattern || ['*.{html,xhtml,xml,svg}']).map(p => new Minimatch(p, { matchBase: true })) : [],
             textPattern: __NODE_JS__ ? (options?.textPattern || [
                 '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
                 'Dockerfile',
                 '*config',
                 '.gitignore',
-            ]).map(p => new minimatch.Minimatch(p, { matchBase: true })) : [],
+            ]).map(p => new Minimatch(p, { matchBase: true })) : [],
             html: {
                 exprDelimeters: defaultDelimeters,
                 attrExpression: ':',
@@ -91,15 +91,16 @@ export class ProstoRewrite {
         if (__BROWSER__) return
         const files = await readDir(opts.baseDir)
         const dirPath = await pathResolve(opts.baseDir)
-        const include = opts.include && opts.include.length ? opts.include.map(s => new minimatch.Minimatch(s, { matchBase: true })) : null
-        const exclude = opts.exclude && opts.exclude.length ? opts.exclude.map(s => new minimatch.Minimatch(s, { matchBase: true })) : null
+        const include = opts.include && opts.include.length ? opts.include.map(s => new Minimatch(s, { matchBase: true })) : null
+        const exclude = opts.exclude && opts.exclude.length ? opts.exclude.map(s => new Minimatch(s, { matchBase: true })) : null
+        const rename = opts.renameFile || (f => f)
         for await (const filePath of files) {
             let included = true
             let excluded = false
             if (include) included = !!include.find(m => m.match(filePath))
             if (exclude && included) excluded = !!exclude.find(m => m.match(filePath))
             if (!included || excluded) continue
-            const relativeFilePath = filePath.slice(dirPath.length)
+            const relativeFilePath = rename(filePath.slice(dirPath.length + 1))
             let targetPath
             if (opts.output) {
                 targetPath = await pathJoin(opts.output, relativeFilePath)

@@ -5,7 +5,7 @@
             "es2019"
         ],
         "module": "ESNext",
-        "declaration": true,
+        "declaration": false,
         "sourceMap": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,

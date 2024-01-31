@@ -1,5 +1,5 @@
-import { ProstoParserNodeContext } from '@prostojs/parser'
-import { IMinimatch } from 'minimatch'
+import { ProstoParserNodeContext, TGenericCustomDataType } from '@prostojs/parser'
+import { Minimatch } from 'minimatch'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface TRewriteNodeType<T extends { code: TRewriteCodeFactory<any> } = { code: TRewriteCodeFactory<any> }> {
@@ -14,7 +14,7 @@ export interface TStringExpressionData extends TRewriteNodeType<TStringExpressio
     expression: string,
 }
 
-export type TRewriteCodeFactory<T> = (context: ProstoParserNodeContext<T>, level?: number) => string
+export type TRewriteCodeFactory<T extends TGenericCustomDataType> = (context: ProstoParserNodeContext<T>, level?: number) => string
 
 export interface TValueNodeCustomData {
     quote: string
@@ -74,12 +74,12 @@ export interface TRewriteTextOptions extends TRewriteCommonOptions {
 }
 
 export interface TRewriteOptions {
-    defaultMode: TRewriteMode
-    debug: boolean
-    htmlPattern: IMinimatch[]
-    textPattern: IMinimatch[]
-    html: TRewriteHtmlOptions
-    text: TRewriteTextOptions
+    defaultMode: TRewriteMode;
+    debug: boolean;
+    htmlPattern: Minimatch[];
+    textPattern: Minimatch[];
+    html: TRewriteHtmlOptions;
+    text: TRewriteTextOptions;
 }
 
 export type TRewriteMode = 'html' | 'text' | 'auto'
@@ -106,4 +106,5 @@ export interface TRewriteDirOptions {
     output?: string
     mode?: TRewriteMode
     onFile?: (path: string, output: string) => void
+    renameFile?: (filename: string) => string
 }
