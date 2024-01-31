@@ -40,6 +40,7 @@ export function renderCode(context: ProstoParserNodeContext, level = 1) {
                 result += indent + data.openCode
             }
             if (data.code) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 result += data.code(c, level)
             }
             result += renderCode(c, level + (data.openCode ? 1 : 0))
