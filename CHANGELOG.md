@@ -1,3 +1,12 @@
+# [0.1.0](https://github.com/prostojs/rewrite/compare/v0.0.4...v0.1.0) (2024-01-31)
+
+
+### Features
+
+* add rename option to rewriteDir ([c8bf870](https://github.com/prostojs/rewrite/commit/c8bf8707a063b9b8007870578f612bc51651db68))
+
+
+
 ## [0.0.4](https://github.com/prostojs/rewrite/compare/v0.0.3...v0.0.4) (2021-11-08)
 
 
