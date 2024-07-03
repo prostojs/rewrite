@@ -1,3 +1,12 @@
+## [0.1.1](https://github.com/prostojs/rewrite/compare/v0.1.0...v0.1.1) (2024-07-03)
+
+
+### Bug Fixes
+
+* build for nodejs only ([989b4a8](https://github.com/prostojs/rewrite/commit/989b4a819446cc55afb79e83d26082629890629c))
+
+
+
 # [0.1.0](https://github.com/prostojs/rewrite/compare/v0.0.4...v0.1.0) (2024-01-31)
 
 
