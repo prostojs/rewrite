@@ -32,6 +32,8 @@ const external = ['url', 'crypto', 'stream', 'packages/*/src', 'http', 'path']
 const replacePlugin = replace({
   values: {
     'process.env.NODE_ENV': JSON.stringify('production'),
+    '__NODE_JS__': 'true',
+    '__BROWSER__': 'false',
     ...createDyeReplaceConst(),
   },
   preventAssignment: true,
