@@ -2,14 +2,11 @@ let __ = ''
 let __v = ''
 with (__ctx__) {
   if (a > c) {
-    __ += `const a = 'test1'`
-    __ += `\n// commented line\n`
+    __ += `const a = 'test1'\n// commented line\n`
   } else {
-    __ += `onst b = 'test2'\n`
-    __ += `const c = 'test3 `
+    __ += `const b = 'test2'\nconst c = 'test3 `
     __ += h
-    __ += `'`
-    __ += `\n`
+    __ += `'\n`
   }
 }
 return __

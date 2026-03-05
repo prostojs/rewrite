@@ -74,7 +74,7 @@ describe('text-parser', () => {
             d: 2,
             items: [1, 2],
         })
-        //   saveCodeFile(name, result)
+        //   // saveCodeFile(name, result)
         expect(result).toEqual(codeFile(name))
     })
     it('must rewrite "json"', () => {
@@ -86,7 +86,7 @@ describe('text-parser', () => {
             d: 2,
             items: [1, 2],
         })
-        //   saveCodeFile(name, result)
+        //   // saveCodeFile(name, result)
         expect(result).toEqual(codeFile(name))
     })
 })

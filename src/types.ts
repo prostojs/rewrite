@@ -1,7 +1,4 @@
-import {
-    ProstoParserNodeContext,
-    TGenericCustomDataType,
-} from '@prostojs/parser'
+import { ParsedNode } from '@prostojs/parser'
 import { Minimatch } from 'minimatch'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,8 +18,8 @@ export interface TStringExpressionData extends TRewriteNodeType<TStringExpressio
     expression: string
 }
 
-export type TRewriteCodeFactory<T extends TGenericCustomDataType> = (
-    context: ProstoParserNodeContext<T>,
+export type TRewriteCodeFactory<T> = (
+    node: ParsedNode<T>,
     level?: number,
 ) => string
 
@@ -70,7 +67,7 @@ export interface TProstoRewriter {
 export type TProstoRewriteContext = Record<string, unknown>
 
 export interface TRewriteCommonOptions {
-    exprDelimeters: [string, string]
+    exprDelimiters: [string, string]
     blockOperation: string
     directive: string
 }

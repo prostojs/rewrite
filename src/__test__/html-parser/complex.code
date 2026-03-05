@@ -1,32 +1,11 @@
 let __ = ''
 let __v = ''
 with (__ctx__) {
-  __ += `<!DOCTYPE html>`
-  __ += `\n`
-  __ += `<html`
-  __ += `>\n`
-  __ += `<head`
-  __ += `>\n    `
-  __ += `<meta `
-  __ += `charset="utf-8"`
-  __ += `>\n    `
-  __ += `<title`
-  __ += `>My test page`
-  __ += `</title>\n    `
-  __ += `<!-- First Comment -->`
-  __ += `\n`
-  __ += `</head>\n`
-  __ += `<body`
-  __ += `>\n    `
-  __ += `<!-- <div>commented div `
+  __ += `<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="utf-8">\n    <title>My test page</title>\n    <!-- First Comment -->\n</head>\n<body>\n    <!-- <div>commented div `
   __ += value
   __ += `: `
   __ += item.toUpperCase()
-  __ += ` </div> -->`
-  __ += `\n    `
-  __ += `<img `
-  __ += `src="images/firefox-icon.png"`
-  __ += ` `
+  __ += ` </div> -->\n    <img src="images/firefox-icon.png" `
   __v = 'My test image ' + url
   if (typeof __v === 'boolean') {
     if (__v) __ += `alt`
@@ -35,52 +14,34 @@ with (__ctx__) {
   }
   __ += `>\n    `
   for (item of items) {
-    __ += `<div `
-    __ += `>\n        `
-    __ += `<a `
+    __ += `<div >\n        <a `
     __v = item
     if (typeof __v === 'boolean') {
       if (__v) __ += `href`
     } else {
       __ += `href="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __ += ` />`
-    __ += `\n        `
+    __ += ` />\n        `
     __ += item + 'string'
-    __ += `\n    `
-    __ += `</div>\n    `
+    __ += `\n    </div>\n    `
   }
   if (condition) {
-    __ += `<span `
-    __ += ` `
+    __ += `<span  `
     __v = ''
     if (typeof __v === 'boolean') {
       if (__v) __ += `class`
     } else {
       __ += `class="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __ += `> condition `
-    __ += `<strong`
-    __ += `>1`
-    __ += `</strong> `
-    __ += `end of `
+    __ += `> condition <strong>1</strong> end of `
     __ += some.value
-    __ += ` `
-    __ += `</span>\n    `
+    __ += ` </span>\n    `
   } else if (a === 5) {
-    __ += `<span `
-    __ += `> condition 2 `
-    __ += `</span>\n    `
+    __ += `<span > condition 2 </span>\n    `
   } else {
-    __ += `<span `
-    __ += `> condition 3 `
-    __ += `</span>\n    `
+    __ += `<span > condition 3 </span>\n    `
   }
-  __ += `<div \n        `
-  __ += `dense="ab"`
-  __ += ` `
-  __ += `de`
-  __ += `\n        `
+  __ += `<div \n        dense="ab" de\n        `
   __v = d.id
   if (typeof __v === 'boolean') {
     if (__v) __ += `data-id`
@@ -108,12 +69,8 @@ with (__ctx__) {
   } else {
     __ += `class="${ (__v || '').replace(/"/g, '&quot;') }"`
   }
-  __ += `\n    `
-  __ += `>\n    `
+  __ += `\n    >\n    `
   __ += 'so good 25 \\'
-  __ += `' }}\n    `
-  __ += `</div>\n`
-  __ += `</body>\n`
-  __ += `</html>`
+  __ += `' }}\n    </div>\n</body>\n</html>`
 }
 return __

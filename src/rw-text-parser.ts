@@ -1,4 +1,4 @@
-import { BasicNode } from '@prostojs/parser'
+import { Node, ParsedNode } from '@prostojs/parser'
 import { stringExpressionNodeFactory } from './string-expression'
 import {
     TRewriteCodeFactory,
@@ -24,13 +24,13 @@ const textBlockTypes: TTextBlockDescr[] = [
         key: 'FOR',
         exprRequired: true,
         opening: true,
-        code: ({ customData }) => `for ${customData.expression} {\n`,
+        code: (node) => `for ${node.data.expression} {\n`,
     },
     {
         key: 'IF',
         exprRequired: true,
         opening: true,
-        code: ({ customData }) => `if ${customData.expression} {\n`,
+        code: (node) => `if ${node.data.expression} {\n`,
     },
     {
         key: 'ELSEIF',
@@ -38,7 +38,7 @@ const textBlockTypes: TTextBlockDescr[] = [
         exprRequired: true,
         opening: false,
         overtakes: ['IF', 'ELSEIF'],
-        code: ({ customData }) => `} else if ${customData.expression} {\n`,
+        code: (node) => `} else if ${node.data.expression} {\n`,
     },
     {
         key: 'ELSE',
@@ -68,148 +68,196 @@ export const getTextParser = (
     opts: TRewriteTextOptions,
     recognizeHtmlDirective = false,
 ) => {
-    const rootNode = new BasicNode({ icon: 'Text Mode' })
+    const rootNode = new Node({ name: 'text-root', eofClose: true })
     const stringExpressionNode = stringExpressionNodeFactory(
-        opts.exprDelimeters,
+        opts.exprDelimiters,
     )
 
-    const blockOperationNode = new BasicNode<TTextBlockCustomData>({
-        label: '',
-        icon: '↳',
-        tokens: [
-            new RegExp(
-                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.blockOperation)}\\s*(?<block>\\w+[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<expression>\\(.*\\))?(?<rest>[^\\n]*)?$`,
-                'm',
-            ),
-            new RegExp(
-                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.blockOperation)}\\s*(?<endBlock>END[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<endExpression>\\(.*\\))?(?<endRest>[^\\n]*)?$`,
-                'm',
-            ),
+    const esc = escapeRegex(opts.blockOperation)
+
+    // Start pattern - includes trailing \n, excludes END* blocks
+    const blockStartPattern = new RegExp(
+        `^\\s*(?:\\/\\/|#)${esc}\\s*(?<block>(?!END)\\w+[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<expression>\\(.*\\))?(?<rest>[^\\n]*)?$\\n?`,
+        'm',
+    )
+    // END pattern - includes trailing \n
+    const blockEndPattern = new RegExp(
+        `^\\s*(?:\\/\\/|#)${esc}\\s*(?<endBlock>END[^\\S\\r\\n]*\\w*)[^\\S\\r\\n]*(?<endExpression>\\(.*\\))?(?<endRest>[^\\n]*)?$\\n?`,
+        'm',
+    )
+    // Overtake pattern (ELSE/ELSEIF) - ejects so the text is re-matched as start
+    const blockOvertakePattern = new RegExp(
+        `^\\s*(?:\\/\\/|#)${esc}\\s*(?:ELSE\\s*IF|ELSE)[^\\S\\r\\n]*(?:\\(.*\\))?[^\\n]*$`,
+        'm',
+    )
+
+    const blockOperationNode = new Node<TTextBlockCustomData>({
+        name: 'block-operation',
+        // Dynamic wrapper ensures this goes to dynamics array (not statics),
+        // so the overtake end token (also dynamic) gets checked first
+        start: { token: () => blockStartPattern, omit: true },
+        end: [
+            { token: blockEndPattern, omit: true },
+            {
+                token: (ctx) => {
+                    // Only IF/ELSEIF blocks can be overtaken by ELSE/ELSEIF
+                    const block = ctx.node.data.block?.replace(/[\s\n]/g, '')
+                    if (block === 'IF' || block === 'ELSEIF') {
+                        return blockOvertakePattern
+                    }
+                    return /\b\B/
+                },
+                eject: true,
+            },
         ],
-        tokenOE: 'omit-omit',
+        eofClose: true,
+        data: {
+            block: '',
+            expression: '',
+            rest: '',
+            descr: null as unknown as TTextBlockDescr,
+            endBlock: '',
+            endExpression: '',
+            endRest: '',
+            code: () => '',
+            openCode: '',
+            closeCode: '',
+        },
     })
-        .onMatchStartToken(({ customData, parserContext, matched }) => {
-            const { block, expression, rest } = (matched as RegExpExecArray)
-                .groups as unknown as TTextBlockCustomData
-            const descr =
-                textBlockTypesO[
-                    block.replace(/[\s\n]/g, '') as TTextBlockOperations
-                ]
+        .onOpen((node) => {
+            const block = node.data.block.replace(/[\s\n]/g, '')
+            const { expression, rest } = node.data
+            const descr = textBlockTypesO[block as TTextBlockOperations]
+
             if (!descr) {
-                parserContext.panic(
+                throw new Error(
                     `Unknown block operation "${block.trim()}".`,
-                    -matched[0].indexOf(block),
                 )
             }
             if (descr.exprRequired && !expression) {
-                parserContext.panic(
+                throw new Error(
                     `Expression required for "${block.trim()}" operation.`,
-                    -matched[0].length,
                 )
             }
             if (!descr.exprRequired && !!expression) {
-                parserContext.panic(
+                throw new Error(
                     `Unexpected expression for "${block.trim()}" operation.`,
-                    -matched[0].indexOf(expression),
                 )
             }
             if (rest) {
-                parserContext.panic(
+                throw new Error(
                     `Unexpected text "${rest}" in "${block.trim()}" operation.`,
-                    -matched[0].length + rest.length,
                 )
             }
-            if (descr.opening) {
-                return true
-            }
-            if (descr.overtakes && descr.overtakes.includes(customData.block)) {
-                parserContext.pop()
-                return true
-            }
-            if (customData.block) {
-                parserContext.panic(
-                    `Unexpected block operation "${block.trim()}" after "${customData.block}" block.`,
-                )
-            } else {
-                parserContext.panic(
-                    `Unexpected block operation "${block.trim()}".`,
-                )
-            }
-        })
-        .onMatch(({ customData, context, parserContext }) => {
-            customData.block = customData.block.replace(/[\s\n]/g, '')
-            customData.descr =
-                textBlockTypesO[customData.block as TTextBlockOperations]
-            customData.openCode = customData.descr.code(context)
-            parserContext.jump() // eating the new line
-        })
-        .onPop(({ parserContext }) => parserContext.jump()) // eating the new line
-        .onMatchEndToken(({ customData, matched, parserContext }) => {
-            const { endBlock } = (matched as RegExpExecArray)
-                .groups as unknown as TTextBlockCustomData
-            const endKey =
-                'END' + (customData.descr.closingKey || customData.descr.key)
-            if (endKey !== endBlock.replace(/[\s\n]/g, '')) {
-                parserContext.panic(
-                    'Wrong closing block instruction ' + endBlock,
-                    matched[0].length,
-                )
-            }
-            customData.closeCode = '}\n'
-            return true
-        })
-        .popsAtEOFSource(true)
 
-    const revealNode = new BasicNode({
-        icon: ':',
-        tokens: [
-            new RegExp(
+            if (!descr.opening) {
+                // Non-opening block (ELSE, ELSEIF) - check previous sibling
+                const parentContent = node.parent?.content
+                if (parentContent) {
+                    let prevSiblingNode: ParsedNode | null = null
+                    for (let j = parentContent.length - 1; j >= 0; j--) {
+                        const item = parentContent[j]
+                        if (typeof item === 'string') {
+                            if (item.replace(/[\s\n\r]/g, '')) {
+                                throw new Error(
+                                    `Unexpected block operation "${block.trim()}".`,
+                                )
+                            }
+                        } else {
+                            prevSiblingNode = item
+                            break
+                        }
+                    }
+                    if (
+                        !prevSiblingNode ||
+                        !descr.overtakes?.includes(
+                            (prevSiblingNode.data as TTextBlockCustomData)
+                                .block,
+                        )
+                    ) {
+                        throw new Error(
+                            `Unexpected block operation "${block.trim()}".`,
+                        )
+                    }
+                    // Clear previous block's closeCode
+                    ;(prevSiblingNode.data as TTextBlockCustomData).closeCode =
+                        ''
+                } else {
+                    throw new Error(
+                        `Unexpected block operation "${block.trim()}".`,
+                    )
+                }
+            }
+
+            node.data.block = block
+            node.data.descr = descr
+            node.data.openCode = descr.code(node)
+        })
+        .onClose((node, match) => {
+            if (match?.groups?.endBlock) {
+                const endBlock = match.groups.endBlock.replace(/[\s\n]/g, '')
+                const endKey = 'END' + (node.data.descr.closingKey || node.data.descr.key)
+                if (endKey !== endBlock) {
+                    throw new Error(
+                        'Wrong closing block instruction ' + match.groups.endBlock,
+                    )
+                }
+            }
+            node.data.closeCode = '}\n'
+        })
+
+    const revealNode = new Node({
+        name: 'reveal',
+        start: {
+            token: new RegExp(
                 `^\\s*(?:\\/\\/|#)${escapeRegex(opts.revealLine)}[^\\S\\r\\n]*`,
                 'm',
             ),
-            /$/m,
-        ],
-        tokenOE: 'omit-',
+            omit: true,
+        },
+        end: { token: /$/m },
+        eofClose: true,
+        recognizes: [stringExpressionNode],
     })
-        .addRecognizes(stringExpressionNode)
-        .popsAtEOFSource(true)
 
-    const ignoreDirectiveNode = new BasicNode({
-        icon: ':',
-        tokens: [
-            new RegExp(
-                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*ignore-next-line\\s*$`,
+    const ignoreDirectiveNode = new Node({
+        name: 'ignore-directive',
+        start: {
+            token: new RegExp(
+                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*ignore-next-line\\s*$\\n?`,
                 'm',
             ),
-            /^[^\n]*$/m,
-        ],
-        tokenOE: 'omit-',
-    }).popsAtEOFSource(true)
-
-    const htmlDirectiveNode = new BasicNode({
-        icon: 'H',
-        tokens: [
-            new RegExp(
-                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*html-mode-on\\s*$`,
-                'm',
-            ),
-            new RegExp(
-                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*html-mode-off\\s*$`,
-                'm',
-            ),
-        ],
-        tokenOE: 'omit-omit',
+            omit: true,
+        },
+        end: { token: /^[^\n]*$/m },
+        eofClose: true,
     })
-        .onMatch(({ parserContext }) => parserContext.jump()) // eating the new line
-        .onPop(({ parserContext }) => parserContext.jump()) // eating the new line
 
-    blockOperationNode.addRecognizes(
+    const htmlDirectiveNode = new Node({
+        name: 'html-directive',
+        start: {
+            token: new RegExp(
+                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*html-mode-on\\s*$\\n?`,
+                'm',
+            ),
+            omit: true,
+        },
+        end: {
+            token: new RegExp(
+                `^\\s*(?:\\/\\/|#)${escapeRegex(opts.directive)}\\s*html-mode-off\\s*$\\n?`,
+                'm',
+            ),
+            omit: true,
+        },
+    })
+
+    blockOperationNode.recognize(
         ignoreDirectiveNode,
         blockOperationNode,
         revealNode,
         stringExpressionNode,
     )
-    rootNode.addRecognizes(
+    rootNode.recognize(
         ignoreDirectiveNode,
         blockOperationNode,
         revealNode,
@@ -217,8 +265,8 @@ export const getTextParser = (
     )
 
     if (recognizeHtmlDirective) {
-        rootNode.addRecognizes(htmlDirectiveNode)
-        blockOperationNode.addRecognizes(htmlDirectiveNode)
+        rootNode.recognize(htmlDirectiveNode)
+        blockOperationNode.recognize(htmlDirectiveNode)
     }
 
     return {

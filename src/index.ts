@@ -12,6 +12,7 @@ import { getHtmlParser, getHtmlRewriter } from './rw-html-parser'
 import { getTextParser, getTextRewriter } from './rw-text-parser'
 import {
     TProstoRewriteContext,
+    TProstoRewriter,
     TRewriteCommonOptions,
     TRewriteDirOptions,
     TRewriteFileOptions,
@@ -24,10 +25,13 @@ import { debug } from './utils'
 export * from './types'
 export * from './rw-common'
 
-const defaultDelimeters: TRewriteCommonOptions['exprDelimeters'] = ['{{', '}}']
+const defaultDelimiters: TRewriteCommonOptions['exprDelimiters'] = ['{{', '}}']
 
 export class ProstoRewrite {
     protected options: TRewriteOptions
+    private _mixedRewriter?: { text: TProstoRewriter; html: TProstoRewriter }
+    private _textRewriter?: TProstoRewriter
+    private _htmlRewriter?: TProstoRewriter
 
     constructor(options?: TRewriteOptionsPublic) {
         this.options = {
@@ -49,7 +53,7 @@ export class ProstoRewrite {
                   ).map((p) => new Minimatch(p, { matchBase: true }))
                 : [],
             html: {
-                exprDelimeters: defaultDelimeters,
+                exprDelimiters: defaultDelimiters,
                 attrExpression: ':',
                 blockOperation: 'v-',
                 directive: '!@',
@@ -58,7 +62,7 @@ export class ProstoRewrite {
                 ...options?.html,
             },
             text: {
-                exprDelimeters: defaultDelimeters,
+                exprDelimiters: defaultDelimiters,
                 blockOperation: '=',
                 revealLine: ':',
                 directive: '!@',
@@ -68,26 +72,35 @@ export class ProstoRewrite {
     }
 
     get mixedRewriter() {
-        const textNodes = getTextParser(this.options.text, true)
-        const htmlNodes = getHtmlParser(this.options.html, true)
-        textNodes.htmlDirectiveNode.addRecognizes(
-            ...htmlNodes.rootNode.recognizes,
-        )
-        htmlNodes.textDirectiveNode.addRecognizes(
-            ...textNodes.rootNode.recognizes,
-        )
-        return {
-            text: getRewriter(textNodes.rootNode, this.options.debug),
-            html: getRewriter(htmlNodes.rootNode, this.options.debug),
+        if (!this._mixedRewriter) {
+            const textNodes = getTextParser(this.options.text, true)
+            const htmlNodes = getHtmlParser(this.options.html, true)
+            textNodes.htmlDirectiveNode.recognize(
+                ...htmlNodes.rootNode.recognizes,
+            )
+            htmlNodes.textDirectiveNode.recognize(
+                ...textNodes.rootNode.recognizes,
+            )
+            this._mixedRewriter = {
+                text: getRewriter(textNodes.rootNode, this.options.debug),
+                html: getRewriter(htmlNodes.rootNode, this.options.debug),
+            }
         }
+        return this._mixedRewriter
     }
 
     get textRewriter() {
-        return getTextRewriter(this.options.text, this.options.debug)
+        if (!this._textRewriter) {
+            this._textRewriter = getTextRewriter(this.options.text, this.options.debug)
+        }
+        return this._textRewriter
     }
 
     get htmlRewriter() {
-        return getHtmlRewriter(this.options.html, this.options.debug)
+        if (!this._htmlRewriter) {
+            this._htmlRewriter = getHtmlRewriter(this.options.html, this.options.debug)
+        }
+        return this._htmlRewriter
     }
 
     public async rewriteFile(
@@ -101,7 +114,6 @@ export class ProstoRewrite {
             file,
         )
         let output = file
-        const modes = this.mixedRewriter
         if (mode) {
             this.debug(
                 'Parsing file in ' +
@@ -111,7 +123,7 @@ export class ProstoRewrite {
                     __DYE_BOLD_OFF__ +
                     opts.input,
             )
-            output = modes[mode].rewrite(file, context)
+            output = this.mixedRewriter[mode].rewrite(file, context)
         } else {
             this.debug(
                 "File isn't recognized as text nor as html. " +

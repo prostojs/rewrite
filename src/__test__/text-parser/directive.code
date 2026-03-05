@@ -3,9 +3,7 @@ let __v = ''
 with (__ctx__) {
   __ += `const a = '`
   __ += expression
-  __ += `'\n`
-  __ += `\nconst b = '{{ expression2 }}'`
-  __ += `\nconst c = '`
+  __ += `'\nconst b = '{{ expression2 }}'\nconst c = '`
   __ += expression3
   __ += `'`
 }

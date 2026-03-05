@@ -1,8 +1,4 @@
-import {
-    BasicNode,
-    ProstoParserNodeContext,
-    TBasicNodeOptions,
-} from '@prostojs/parser'
+import { Node, textContent, ParsedNode } from '@prostojs/parser'
 import { getRewriter, pushString } from './rw-common'
 import { stringExpressionNodeFactory } from './string-expression'
 import {
@@ -15,47 +11,6 @@ import {
     TValueNodeCustomData,
 } from './types'
 import { escapeRegex } from './utils'
-
-const docTypeNodeOptions: TBasicNodeOptions = {
-    label: 'Document Type',
-    tokens: ['<!DOCTYPE ', '>'],
-}
-
-const cDataNodeOptions: TBasicNodeOptions = {
-    icon: '<![CDATA[',
-    tokens: ['<![CDATA[', ']]>'],
-}
-
-const commentNodeOptions: TBasicNodeOptions = {
-    label: 'comment',
-    icon: '“',
-    tokens: ['<!--', '-->'],
-}
-
-const valueNodeOptions: TBasicNodeOptions<TValueNodeCustomData> = {
-    label: 'value',
-    icon: '=',
-    tokens: [/=(?<quote>["'`])/, ({ customData }) => customData.quote || ''],
-    backSlash: '-ignore',
-    tokenOE: 'omit-omit',
-}
-
-const valueNode = new BasicNode<TValueNodeCustomData>(valueNodeOptions)
-
-const unquotedValueNodeOptions: TBasicNodeOptions = {
-    label: 'value',
-    icon: '=',
-    tokens: [/=(?<content>\w+)/, /[\s/>]/],
-    tokenOE: 'omit-eject',
-}
-
-const unquotedValueNode = new BasicNode(unquotedValueNodeOptions)
-
-const innerNodeOptions: TBasicNodeOptions = {
-    label: 'inner',
-    tokens: ['>', '</'],
-    tokenOE: '-eject',
-}
 
 const htmlBlockTypes: THTMLBlockDescr[] = [
     {
@@ -98,16 +53,29 @@ export const getHtmlParser = (
     opts: TRewriteHtmlOptions,
     recognizeTextDirective = false,
 ) => {
-    const rootNode = new BasicNode({ icon: 'Html Mode' })
-
-    const docTypeNode = new BasicNode(docTypeNodeOptions)
-    const cDataNode = new BasicNode(cDataNodeOptions)
-    const commentNode = new BasicNode(commentNodeOptions)
-
-    const innerNode = new BasicNode(innerNodeOptions)
     const stringExpressionNode = stringExpressionNodeFactory(
-        opts.exprDelimeters,
+        opts.exprDelimiters,
     )
+
+    const docTypeNode = new Node({
+        name: 'doctype',
+        start: '<!DOCTYPE ',
+        end: '>',
+    })
+
+    const cDataNode = new Node({
+        name: 'cdata',
+        start: '<![CDATA[',
+        end: ']]>',
+        recognizes: [stringExpressionNode],
+    })
+
+    const commentNode = new Node({
+        name: 'comment',
+        start: '<!--',
+        end: '-->',
+        recognizes: [stringExpressionNode],
+    })
 
     const attrNode = attributeNodeFactory()
     const attrBlockOperationNode = attributeNodeFactory(
@@ -118,214 +86,207 @@ export const getHtmlParser = (
     const attrExprNode = attributeNodeFactory('≈', opts.attrExpression, 'expr')
     const attrNodes = [attrBlockOperationNode, attrExprNode, attrNode]
 
-    const textDirectiveNode = new BasicNode({
-        icon: 'T',
-        tokens: [
-            new RegExp(
-                `^\\s*(?:<!--)${escapeRegex(opts.directive)}\\s*text-mode-on\\s*-->\\s*$`,
+    const textDirectiveNode = new Node({
+        name: 'text-directive',
+        start: {
+            token: new RegExp(
+                `^\\s*(?:<!--)${escapeRegex(opts.directive)}\\s*text-mode-on\\s*-->\\s*$\\n?`,
                 'm',
             ),
-            new RegExp(
-                `^\\s*(?:<!--)${escapeRegex(opts.directive)}\\s*text-mode-off\\s*-->\\s*$`,
+            omit: true,
+        },
+        end: {
+            token: new RegExp(
+                `^\\s*(?:<!--)${escapeRegex(opts.directive)}\\s*text-mode-off\\s*-->\\s*$\\n?`,
                 'm',
             ),
-        ],
-        tokenOE: 'omit-omit',
+            omit: true,
+        },
     })
-        .onMatch(({ parserContext }) => parserContext.jump()) // eating the new line
-        .onPop(({ parserContext }) => parserContext.jump()) // eating the new line
 
-    const tagNode = new BasicNode<TTagNodeCustomData>({
-        tokens: [
-            /<(?<tag>[\w:\-.]+)/,
-            ({ customData }) => {
-                if (customData.isVoid) return /\/?>\s*/
-                if (customData.isText)
+    // Inner node for regular tags: between > and </
+    // Uses dynamic start token to only match for non-text, non-void tags
+    const innerNode = new Node({
+        name: 'inner',
+        start: {
+            token: (ctx) => {
+                const parentData = ctx.parent?.data as TTagNodeCustomData | undefined
+                if (parentData?.isText || parentData?.isVoid) return /\b\B/
+                return '>'
+            },
+        },
+        end: { token: '</', eject: true },
+        recognizes: [commentNode, cDataNode, stringExpressionNode],
+    })
+
+    // Text inner node for text tags (script, style) - no child recognition
+    const textInnerNode = new Node({
+        name: 'textInner',
+        start: {
+            token: (ctx) => {
+                const parentData = ctx.parent?.data as TTagNodeCustomData | undefined
+                if (parentData?.isText) return '>'
+                return /\b\B/
+            },
+        },
+        end: { token: '</', eject: true },
+    })
+
+    const tagNode = new Node<TTagNodeCustomData>({
+        name: 'tag',
+        start: { token: /<(?<tag>[\w:\-.]+)/ },
+        end: {
+            token: (ctx) => {
+                const data = ctx.node.data
+                if (data.isVoid) return /\/?>\s*/
+                if (data.isText)
                     return new RegExp(
-                        `\\s*<\\/(?<endTag>${escapeRegex(customData.tag)})\\s*>\\s*`,
+                        `\\s*<\\/(?<endTag>${escapeRegex(data.tag)})\\s*>\\s*`,
                     )
                 return /(?:\/>|<\/(?<endTag>[\w:\-.]+)\s*>\s*)/
             },
+        },
+        data: {
+            tag: '',
+            code: () => '',
+        },
+        recognizes: [
+            ...attrNodes,
         ],
     })
-        .onMatch(({ context, customData }) => {
-            context.icon = customData.tag
-            customData.isVoid = opts.voidTags.includes(customData.tag)
-            customData.isText = opts.textTags.includes(customData.tag)
-            if (customData.isVoid) {
-                context.clearRecognizes(innerNode)
-            }
-            if (customData.isText && !recognizeTextDirective) {
-                context.addAbsorbs(innerNode, 'join')
+        .onOpen((node) => {
+            node.data.isVoid = opts.voidTags.includes(node.data.tag)
+            node.data.isText = opts.textTags.includes(node.data.tag)
+        })
+        .onChild((child, parent) => {
+            // Hoist block operation data
+            if (child.node === attrBlockOperationNode) {
+                if (!parent.data.operations) parent.data.operations = []
+                parent.data.operations.push(child.data)
             }
         })
-        .onBeforeChildParse((child, { customData }) => {
-            if (customData.isText && child.node === innerNode) {
-                child.clearRecognizes()
-                if (recognizeTextDirective) {
-                    child.addRecognizes(textDirectiveNode)
-                }
-                child.removeOnAppendContent()
-                child.endsWith = {
-                    token: new RegExp(
-                        `<\\/(?<endTag>${escapeRegex(customData.tag)})\\s*>`,
-                    ),
-                    eject: true,
-                }
-            }
-        })
-        .onAfterChildParse((child, { context }) => {
-            if (child.node === innerNode) {
-                context.clearRecognizes()
-            }
-        })
-        .onPop(
-            ({
-                customData: { isVoid, tag, endTag, operations },
-                parserContext,
-                customData,
-                context,
-            }) => {
-                if (operations && operations.length) {
-                    operations = operations.sort((a) =>
-                        a.key === 'for' ? -1 : 1,
-                    )
-                    customData.operation = operations[0]
-                        .key as THTMLBlockOperations
-                    for (let i = 0; i < operations.length; i++) {
-                        const { key, value } = operations[i]
-                        const descr =
-                            htmlBlockTypesO[key as THTMLBlockOperations]
-                        if (!descr) {
-                            parserContext.panicBlock(
-                                `Unknown block operation "${key}".`,
-                                tag.length,
-                                tag.length + 1,
-                            )
-                        }
-                        if (descr.exprRequired && !value) {
-                            parserContext.panicBlock(
-                                `Expression required for "${key}" operation.`,
-                                tag.length,
-                                tag.length + 1,
-                            )
-                        }
-                        if (!descr.exprRequired && !!value) {
-                            parserContext.panicBlock(
-                                `Unexpected expression for "${key}" operation.`,
-                                tag.length,
-                                tag.length + 1,
-                            )
-                        }
-                        if (descr.overtakes) {
-                            const prevNode = context.getPrevNode()
-                            const prevContext =
-                                context.getPrevContext() as ProstoParserNodeContext<TTagNodeCustomData>
-                            if (
-                                typeof prevNode === 'string' &&
-                                prevNode.replace(/[\s\n\r]/g, '')
-                            ) {
-                                parserContext.panicBlock(
-                                    `Unexpected block operation "${descr.key}".`,
-                                    tag.length,
-                                    tag.length + 1,
-                                )
+        .onClose((node) => {
+            const { isVoid, tag, endTag, operations } = node.data
+            let ops = operations
+            if (ops && ops.length) {
+                ops = ops.sort((a) => (a.key === 'for' ? -1 : 1))
+                node.data.operation = ops[0].key as THTMLBlockOperations
+                for (let i = 0; i < ops.length; i++) {
+                    const { key, value } = ops[i]
+                    const descr =
+                        htmlBlockTypesO[key as THTMLBlockOperations]
+                    if (!descr) {
+                        throw new Error(
+                            `Unknown block operation "${key}".`,
+                        )
+                    }
+                    if (descr.exprRequired && !value) {
+                        throw new Error(
+                            `Expression required for "${key}" operation.`,
+                        )
+                    }
+                    if (!descr.exprRequired && !!value) {
+                        throw new Error(
+                            `Unexpected expression for "${key}" operation.`,
+                        )
+                    }
+                    if (descr.overtakes) {
+                        // Check previous sibling in parent
+                        // Node may not be in parent.content yet during onClose
+                        const parentContent = node.parent?.content
+                        if (parentContent) {
+                            let prevSibling: ParsedNode | null = null
+                            for (let j = parentContent.length - 1; j >= 0; j--) {
+                                const item = parentContent[j]
+                                if (item === node) continue
+                                if (typeof item === 'string') {
+                                    if (item.replace(/[\s\n\r]/g, '')) {
+                                        throw new Error(
+                                            `Unexpected block operation "${descr.key}".`,
+                                        )
+                                    }
+                                } else {
+                                    prevSibling = item
+                                    break
+                                }
                             }
                             if (
-                                !prevContext ||
+                                !prevSibling ||
                                 !descr.overtakes.includes(
-                                    prevContext.getCustomData()
+                                    (prevSibling.data as TTagNodeCustomData)
                                         .operation as THTMLBlockOperations,
                                 )
                             ) {
-                                parserContext.panicBlock(
+                                throw new Error(
                                     `Unexpected block operation "${descr.key}".`,
-                                    tag.length,
-                                    tag.length + 1,
                                 )
                             }
-                            const prevData = prevContext.getCustomData()
+                            const prevData = prevSibling.data as TTagNodeCustomData
                             prevData.closeCode = ''
                         }
                     }
-                    if (operations.length === 1) {
-                        const descr =
-                            htmlBlockTypesO[
-                                operations[0].key as THTMLBlockOperations
-                            ]
-                        customData.openCode = descr.renderOpen(
-                            operations[0].value,
-                        )
-                        customData.closeCode = '}\n'
-                    } else if (operations.length === 2) {
-                        const descr1 =
-                            htmlBlockTypesO[
-                                operations[0].key as THTMLBlockOperations
-                            ]
-                        const descr2 =
-                            htmlBlockTypesO[
-                                operations[1].key as THTMLBlockOperations
-                            ]
-                        if (
-                            !descr1.compatible?.includes(descr2.key) ||
-                            !descr2.compatible?.includes(descr1.key)
-                        ) {
-                            parserContext.panicBlock(
-                                `Block operation "${descr1.key}" is not compatible with "${descr2.key}".`,
-                                tag.length,
-                                tag.length + 1,
-                            )
-                        }
-                        customData.openCode =
-                            descr1.renderOpen(operations[0].value) +
-                            descr2.renderOpen(operations[1].value)
-                        customData.closeCode = '}\n}\n'
-                    } else {
-                        parserContext.panicBlock(
-                            `Too many block operations "${operations.map((o) => o.key).join(', ')}".`,
-                            tag.length,
-                            tag.length + 1,
+                }
+                if (ops.length === 1) {
+                    const descr =
+                        htmlBlockTypesO[ops[0].key as THTMLBlockOperations]
+                    node.data.openCode = descr.renderOpen(ops[0].value)
+                    node.data.closeCode = '}\n'
+                } else if (ops.length === 2) {
+                    const descr1 =
+                        htmlBlockTypesO[ops[0].key as THTMLBlockOperations]
+                    const descr2 =
+                        htmlBlockTypesO[ops[1].key as THTMLBlockOperations]
+                    if (
+                        !descr1.compatible?.includes(descr2.key) ||
+                        !descr2.compatible?.includes(descr1.key)
+                    ) {
+                        throw new Error(
+                            `Block operation "${descr1.key}" is not compatible with "${descr2.key}".`,
                         )
                     }
-                }
-                if (!isVoid && typeof endTag === 'string' && tag !== endTag) {
-                    parserContext.panicBlock(
-                        `Open tag <${tag}> and closing tag </${endTag}> must be equal.`,
-                        tag.length || 0,
-                        endTag.length + 1,
+                    node.data.openCode =
+                        descr1.renderOpen(ops[0].value) +
+                        descr2.renderOpen(ops[1].value)
+                    node.data.closeCode = '}\n}\n'
+                } else {
+                    throw new Error(
+                        `Too many block operations "${ops.map((o) => o.key).join(', ')}".`,
                     )
                 }
-            },
-        )
-        .addRecognizes(innerNode, ...attrNodes)
-        .addHoistChildren({
-            node: attrBlockOperationNode,
-            as: 'operations',
-            asArray: true,
-            deep: 1,
-            mapRule: 'customData',
+            }
+            if (!isVoid && typeof endTag === 'string' && tag !== endTag) {
+                throw new Error(
+                    `Open tag <${tag}> and closing tag </${endTag}> must be equal.`,
+                )
+            }
         })
 
+    // Add inner nodes to tag's recognizes
+    tagNode.recognize(textInnerNode, innerNode)
+
+    // Add tag node to inner node's recognizes (for nested tags)
+    innerNode.recognize(tagNode)
+
     if (recognizeTextDirective) {
-        rootNode.addRecognizes(textDirectiveNode)
-        innerNode.addRecognizes(textDirectiveNode)
-        cDataNode.addRecognizes(textDirectiveNode)
+        innerNode.recognize(textDirectiveNode)
+        cDataNode.recognize(textDirectiveNode)
+        textInnerNode.recognize(textDirectiveNode)
     }
 
-    rootNode.addRecognizes(
-        docTypeNode,
-        commentNode,
-        tagNode,
-        stringExpressionNode,
-    )
-    innerNode.addRecognizes(
-        commentNode,
-        cDataNode,
-        tagNode,
-        stringExpressionNode,
-    )
-    commentNode.addRecognizes(stringExpressionNode)
-    cDataNode.addRecognizes(stringExpressionNode)
+    const rootNode = new Node({
+        name: 'html-root',
+        eofClose: true,
+        recognizes: [
+            docTypeNode,
+            commentNode,
+            tagNode,
+            stringExpressionNode,
+        ],
+    })
+
+    if (recognizeTextDirective) {
+        rootNode.recognize(textDirectiveNode)
+    }
 
     return {
         rootNode,
@@ -346,22 +307,43 @@ export const getHtmlRewriter = (opts: TRewriteHtmlOptions, debug = false) => {
     return getRewriter(getHtmlParser(opts).rootNode, debug)
 }
 
+const quoteEndRegex: Record<string, RegExp> = {
+    '"': /(?<=(?<!\\)(?:\\\\)*)"/ ,
+    "'": /(?<=(?<!\\)(?:\\\\)*)'/,
+    '`': /(?<=(?<!\\)(?:\\\\)*)`/,
+}
+
+const quoteReplaceRegex: Record<string, RegExp> = {
+    '"': /"/g,
+    "'": /'/g,
+}
+
 function attributeNodeFactory(
     icon = '=',
     prefix?: string,
     type: 'plain' | 'block' | 'expr' = 'plain',
-): BasicNode<TAttrNodeCustomData> {
-    const attrNodeOptions: TBasicNodeOptions<TAttrNodeCustomData> = {
-        label: '',
-        icon,
-        tokens: [
-            prefix
-                ? new RegExp(`${escapeRegex(prefix)}(?<key>[\\w:\\-\\.]+)`)
-                : /(?<key>[\w:\-.]+)/,
-            /[\s\n/>]/,
-        ],
-        tokenOE: 'omit-eject',
-    }
+): Node<TAttrNodeCustomData> {
+    const valueNode = new Node<TValueNodeCustomData>({
+        name: `${icon}-value`,
+        start: { token: /=(?<quote>["'`])/, omit: true },
+        end: {
+            token: (ctx) => {
+                const q = ctx.node.data.quote
+                if (!q) return ''
+                return quoteEndRegex[q] || ''
+            },
+            omit: true,
+        },
+        data: { quote: '' },
+    })
+
+    const unquotedValueNode = new Node<{ content: string }>({
+        name: `${icon}-unquoted-value`,
+        start: { token: /=(?<content>\w+)/, omit: true },
+        end: { token: /[\s/>]/, eject: true },
+        data: { content: '' },
+    })
+
     const quoteEsc = {
         '"': '&quot;',
         "'": '&apos;',
@@ -373,7 +355,7 @@ function attributeNodeFactory(
             v += quote
                 ? quote +
                   value.replace(
-                      new RegExp(quote, 'g'),
+                      quoteReplaceRegex[quote],
                       quoteEsc[quote as '"'],
                   ) +
                   quote
@@ -381,19 +363,20 @@ function attributeNodeFactory(
         }
         return v
     }
-    const children = [unquotedValueNode, valueNode]
     const codeFuncs: Record<
         'plain' | 'block' | 'expr',
         TRewriteCodeFactory<TAttrNodeCustomData>
     > = {
-        plain: ({ customData: { key, value, quote } }, level = 0) => {
+        plain: (node, level = 0) => {
+            const { key, value, quote } = node.data
             return (
                 ' '.repeat(level * 2) +
                 pushString(key + escapeVal(value, quote))
             )
         },
         block: () => '',
-        expr: ({ customData: { key, value, quote } }, level = 0) => {
+        expr: (node, level = 0) => {
+            const { key, value, quote } = node.data
             const q = (quote || '') as '"'
             const indent = ' '.repeat(level * 2)
             let s = indent + '__v = ' + ((value as string) || "''") + '\n'
@@ -409,36 +392,48 @@ function attributeNodeFactory(
             return s
         },
     }
-    const attrNode = new BasicNode<TAttrNodeCustomData>(attrNodeOptions)
-        .addPopsAfterNode(...children)
-        .addHoistChildren({
-            node: valueNode,
-            as: 'quote',
-            deep: 1,
-            mapRule: 'customData.quote',
+    const attrNode = new Node<TAttrNodeCustomData>({
+        name: `attr-${type}`,
+        start: {
+            token: prefix
+                ? new RegExp(`${escapeRegex(prefix)}(?<key>[\\w:\\-\\.]+)`)
+                : /(?<key>[\w:\-.]+)/,
+            omit: true,
+        },
+        end: { token: /[\s\n/>]/, eject: true },
+        recognizes: [unquotedValueNode, valueNode],
+        data: {
+            key: '',
+            code: codeFuncs[type],
+        },
+    })
+        .onChild((child, parent) => {
+            if (child.node === valueNode) {
+                parent.data.quote = child.data.quote
+                parent.data.value = textContent(child)
+            } else if (child.node === unquotedValueNode) {
+                parent.data.value = child.data.content
+            }
+            // Remove child from content (absorbed into data)
+            const idx = parent.content.indexOf(child)
+            if (idx >= 0) parent.content.splice(idx, 1)
         })
-        .onPop(({ parserContext, customData: { value, quote } }) => {
-            if (type === 'expr' && value) {
+        .onClose((node) => {
+            // Clear remaining content so renderCode doesn't double-process
+            node.content.length = 0
+
+            if (type === 'expr' && node.data.value) {
                 try {
-                    new Function(value)
+                    new Function(node.data.value)
                 } catch (e) {
-                    parserContext.panic(
+                    throw new Error(
                         'Invalid expression: ' + (e as Error).message,
-                        value.length + 1,
                     )
                 }
             }
-            if (type === 'expr' && !quote) {
-                parserContext.panic(
-                    'Expression must be quoted.',
-                    value?.length || 1,
-                )
+            if (type === 'expr' && !node.data.quote) {
+                throw new Error('Expression must be quoted.')
             }
         })
-        .addAbsorbs(children, 'join->value')
-        .initCustomData(() => ({
-            key: '',
-            code: codeFuncs[type],
-        }))
     return attrNode
 }

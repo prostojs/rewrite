@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@prostojs/parser':
-        specifier: ^0.5.11
-        version: 0.5.11
+        specifier: ^0.6.0
+        version: 0.6.0
       minimatch:
         specifier: ^9.0.9
         version: 9.0.9
@@ -499,11 +499,8 @@ packages:
   '@prostojs/dye@0.4.9':
     resolution: {integrity: sha512-oC7k3vQO5yErAgGSJHEI4uO48d0JQ14DCjnUwqCMO0a5XD81ES9PGYjLDCAIlfYbALuU19Wc1FQv+QJucFigwQ==}
 
-  '@prostojs/parser@0.5.11':
-    resolution: {integrity: sha512-apV1PUbnu7EAsn0/QGE5unyNmqe+o3tCcsa3lYOsplXV55u43ax3vQ/4jxVUOrcF13vKkYkhR4jl6111kHHxpA==}
-
-  '@prostojs/tree@0.3.0':
-    resolution: {integrity: sha512-9Ki9sg7UJvAy3IRXZuTBoVaepiYD+Ok3ucozNiMVWyjKmXjkgmqYUZGzDYAjTygS0s6Ze19X9ECM/0uQVfvHsw==}
+  '@prostojs/parser@0.6.0':
+    resolution: {integrity: sha512-/sm+StB0O/HKNRWKGVQPtEy1bLIC8EgQekxMkK9lHPKmS7iQITfb/AqPTOSO70GNV5b1CNpiOJNZqc7pyGl6PA==}
 
   '@rolldown/binding-android-arm64@1.0.0-rc.7':
     resolution: {integrity: sha512-/uadfNUaMLFFBGvcIOiq8NnlhvTZTjOyybJaJnhGxD0n9k5vZRJfTaitH5GHnbwmc6T2PC+ZpS1FQH+vXyS/UA==}
@@ -1653,11 +1650,7 @@ snapshots:
 
   '@prostojs/dye@0.4.9': {}
 
-  '@prostojs/parser@0.5.11':
-    dependencies:
-      '@prostojs/tree': 0.3.0
-
-  '@prostojs/tree@0.3.0': {}
+  '@prostojs/parser@0.6.0': {}
 
   '@rolldown/binding-android-arm64@1.0.0-rc.7':
     optional: true

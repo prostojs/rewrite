@@ -1,19 +1,13 @@
 let __ = ''
 let __v = ''
 with (__ctx__) {
-  __ += `<body`
-  __ += `>\n    `
+  __ += `<body>\n    `
   for (a of n) {
-    __ += `<div `
-    __ += `>\n    `
-    __ += `<script`
-    __ += `>\n`
+    __ += `<div >\n    <script>\n`
     if (a === b) {
       __ += `        do this\n        do that\n`
     }
-    __ += `    `
-    __ += `</script>\n    `
-    __ += `</div>\n`
+    __ += `    </script>\n    </div>\n`
   }
   __ += `</body>`
 }

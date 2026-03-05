@@ -4,9 +4,9 @@ with (__ctx__) {
   if (a === b) {
     __ += `    do this\n`
   } else if (b === c) {
-    __ += `   do that\n`
+    __ += `    do that\n`
   } else {
-    __ += `   do other\n`
+    __ += `    do other\n`
   }
 }
 return __

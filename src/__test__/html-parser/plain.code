@@ -1,13 +1,6 @@
 let __ = ''
 let __v = ''
 with (__ctx__) {
-  __ += `<div `
-  __ += `test="abc"`
-  __ += ` `
-  __ += `unqouted="cde"`
-  __ += `>\n    `
-  __ += `<span/>`
-  __ += `\n`
-  __ += `</div>`
+  __ += `<div test="abc" unqouted="cde">\n    <span/>\n</div>`
 }
 return __

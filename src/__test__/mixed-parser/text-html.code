@@ -6,18 +6,14 @@ with (__ctx__) {
     __ += `const a = '1'\n`
   }
   for (a ob n) {
-    __ += `<div `
-    __ += `>\n    `
-    __ += `<span `
+    __ += `<div >\n    <span `
     __v = c + d
     if (typeof __v === 'boolean') {
       if (__v) __ += `data`
     } else {
       __ += `data="${ (__v || '').replace(/"/g, '&quot;') }"`
     }
-    __ += ` />`
-    __ += `\n`
-    __ += `</div>\n`
+    __ += ` />\n</div>\n`
   }
   if (b === c) {
     __ += `const b = '2'\n`

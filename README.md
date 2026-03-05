@@ -1,116 +1,175 @@
 # @prostojs/rewrite
 
-Easy and light templates renderer with HTML (XML) support based on [@prostojs/parser](https://www.npmjs.com/package/@prostojs/parser).
+A lightweight template engine for **code generation and scaffolding**. Embed conditional blocks, loops, and expressions directly in real source files — templates stay syntactically valid and readable. Supports both source code (text mode with comment-based directives) and HTML/XML (Vue-like `v-if`, `v-for`, `:attr` bindings).
 
-- Write syntactically valid templates (js, yaml, ...)
-- Use vue-like syntax for html-templates
-- Mix **html** and **text** modes at single template
+- Templates compile to cached JS functions — repeated renders are near-instant
+- Under 27 KB bundled, zero runtime dependencies beyond `@prostojs/parser`
+- Auto-detects text vs HTML mode by file extension; switch modes mid-file with directives
+- Point at a directory to scaffold entire projects with a single call
 
 ## Install
 
-npm:
-
-`npm install @prostojs/rewrite`
-
-Via CDN:
-
-```
-<script src="https://unpkg.com/@prostojs/tree"></script>
-<script src="https://unpkg.com/@prostojs/parser"></script>
-<script src="https://unpkg.com/@prostojs/rewrite"></script>
+```bash
+npm install @prostojs/rewrite
+# or
+pnpm add @prostojs/rewrite
 ```
 
-## Usage
-
-It's possible to point the `ProstoRewrite` to a file or a directory. It's also possible to rewrite any string using [rewriters](#rewriters) directly.
+## Quick Start
 
 ```js
-const { ProstoRewrite } = require('@prostojs/rewrite')
-// or import module
-// import { ProstoRewrite } from '@prostojs/rewrite'
+import { ProstoRewrite } from '@prostojs/rewrite'
 
 const rw = new ProstoRewrite()
-main()
-async function main() {
-    const context = { a: 1 } // context object for templates interpolation
 
-    // rewrite a single file
-    const renderedContent = await rw.rewriteFile(
-        {
-            // required:
-            input: 'path/to/file/filename.js',
-            // optional:
-            output: 'path/to/rewrite/filename.js',
-            mode: 'auto', // text | html | auto
-        },
-        context,
-    )
+// Text mode — rewrite a source code template
+const result = rw.textRewriter.rewrite(
+  `Hello {{ name }}! You have {{ count }} items.`,
+  { name: 'World', count: 3 }
+)
+// => "Hello World! You have 3 items."
 
-    // rewrite files in directory
-    await rw.rewriteDir(
-        {
-            // required:
-            baseDir: 'path/to/files',
-            // optional:
-            include: ['*.{js,html}'], // glob pattern to include
-            exclude: ['*.svg'], // glob pattern to exclude
-            output: 'output/path',
-            mode: 'auto', // text | html | auto
-            onFile: (path, output) => {
-                console.log('Result for file ' + path + '\n' + output)
-            },
-        },
-        context,
-    )
-}
+// HTML mode — rewrite markup
+const html = rw.htmlRewriter.rewrite(
+  `<ul><li v-for="item of items">{{ item }}</li></ul>`,
+  { items: ['apple', 'banana', 'cherry'] }
+)
+// => "<ul><li>apple</li>\n<li>banana</li>\n<li>cherry</li></ul>"
 ```
 
-## Templates
+## Text Mode
 
-### TEXT
+Text mode is designed for source code, config files, Dockerfiles, and any non-HTML content. Directives are embedded in line comments, keeping your templates syntactically valid.
 
-The text template is good for any text source (js, ts, yaml, ...).
+### Expressions
 
-To keep the source files syntactically valid all the control flow blocks
-must be written in comment `//` or `#`.
+Use `{{ }}` delimiters (customizable) to interpolate any JavaScript expression:
 
-Text template consists of:
+```
+const greeting = '{{ salutation }} {{ name }}!'
+const sum = {{ a + b }}
+```
 
-- operation blocks (`//=IF(...)`),
-- directives (`//!@ignore-next-line`),
-- reveal comments (`//: const a = 1`),
-- string expressions (`conat a = {{ scopedValue }}`).
+Context: `{ salutation: 'Hello', name: 'World', a: 2, b: 3 }`
 
-**Operation blocks\*** **:**
-Key | Example | Description
----|---|---
-`IF`|`//=IF(condition)` or `#=IF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `context` vars.
-`ELSEIF`**|`//=ELSEIF(condition)` or `#=ELSEIF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `context` vars. Must be used after `IF` or `ELSEIF` operation block.
-`ELSE`|`//=ELSE` or `#=ELSE`|WIll add the lines below only if the previous conditions didn't match. Must be used after `IF` or `ELSEIF` operation block.
-`ENDIF`**|`//=ENDIF` or `#=ENDIF`|Ends the `IF` blocks series.
-`FOR`|`//=FOR(a of b)` or `#=FOR(a of b)`|Will iterate through the loop. The `a of b` part must be a valid javascript loop expression and can use `context` vars.
-`ENDFOR`\*\*|`//=ENDFOR` or `#=ENDFOR`|Ends the `FOR` block.
+Output:
+```
+const greeting = 'Hello World!'
+const sum = 5
+```
 
-\*The operation block can have spaces before it and after it, but it must take only one line. All the operation blocks can start with `#` as well as with `//`
+### Conditional Blocks (IF / ELSE / ELSEIF)
 
-\*\*The operation block may have spaces between words e.g. `ELSE IF`, `END FOR`...
+```js
+//=IF (env === 'production')
+const API = 'https://api.prod.com'
+//=ELSEIF (env === 'staging')
+const API = 'https://api.staging.com'
+//=ELSE
+const API = 'http://localhost:3000'
+//=ENDIF
+```
 
-**Directives:**
+Context: `{ env: 'staging' }` produces:
+```js
+const API = 'https://api.staging.com'
+```
 
-| Key                | Example                                         | Description                                                                                                                                    |
-| ------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ignore-next-line` | `//!@ignore-next-line` or `#!@ignore-next-line` | Instruct the processor to ignore (not interpolate) the next line of the source. The next line will be copied without any change.               |
-| `html-mode-on`     | `//!@html-mode-on` or `#!@html-mode-on`         | Instructs the processor (only if it is mixed rewriter) to start using HTML mode for the futher lines of the source.                            |
-| `html-mode-off`    | `//!@html-mode-off` or `#!@html-mode-off`       | Instructs the processor (only if it is mixed rewriter) to stop using HTML mode for the futher lines of the source and return to the text mode. |
+The comment prefix (`//`, `#`, `--`, etc.) is automatically detected from the line. Use whatever comment style fits your language:
 
-**Reveal comments:** the line prefixed with `reveal comment` prefix will be rendered as **uncommented** line. Use this when needed to keep the source file syntatically valid.
+```yaml
+#=IF (includeRedis)
+redis:
+  image: redis:alpine
+#=ENDIF
+```
 
-**String expressions:** vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the context vars.
+**Operation blocks reference:**
 
-**Example:**
+| Key | Example | Description |
+|---|---|---|
+| `IF` | `//=IF(condition)` | Includes lines below only if `condition` is truthy. |
+| `ELSEIF` | `//=ELSEIF(condition)` | Alternative branch. Must follow `IF` or `ELSEIF`. |
+| `ELSE` | `//=ELSE` | Fallback branch. Must follow `IF` or `ELSEIF`. |
+| `ENDIF` | `//=ENDIF` | Closes the `IF` block chain. |
+| `FOR` | `//=FOR(a of b)` | Iterates with any valid JS loop expression. |
+| `ENDFOR` | `//=ENDFOR` | Closes the `FOR` block. |
+
+> Operation blocks can have spaces between words: `ELSE IF`, `END FOR`, etc.
+> All blocks work with `#` and `//` comment prefixes.
+
+### Loops (FOR / ENDFOR)
+
+```js
+//=FOR (const route of routes)
+app.get('{{ route.path }}', {{ route.handler }})
+//=ENDFOR
+```
+
+Context: `{ routes: [{ path: '/api', handler: 'apiHandler' }, { path: '/', handler: 'indexHandler' }] }`
+
+Output:
+```js
+app.get('/api', apiHandler)
+app.get('/', indexHandler)
+```
+
+### Nesting
+
+Blocks nest freely:
+
+```js
+//=IF (features.auth)
+//=FOR (const provider of authProviders)
+//=IF (provider !== 'local')
+import {{ provider }}Strategy from './strategies/{{ provider }}'
+//=ENDIF
+//=ENDFOR
+//=ENDIF
+```
+
+### Reveal Lines
+
+Lines prefixed with `//:` (comment + reveal marker) are **hidden in the template but appear in the output**. This is the inverse of normal lines — useful for generating code that shouldn't be visible in the template source:
+
+```js
+//=IF (useTypescript)
+//: import type { Config } from './types'
+//=ENDIF
+const config = {}
+```
+
+Context: `{ useTypescript: true }`
+
+Output:
+```js
+import type { Config } from './types'
+const config = {}
+```
+
+Reveal lines can contain expressions too:
+
+```js
+//: const {{ varName }} = {{ JSON.stringify(defaultValue) }}
+```
+
+### Directives
+
+| Directive | Example | Description |
+|---|---|---|
+| `ignore-next-line` | `//!@ignore-next-line` | The next line passes through as-is, without interpolation. |
+| `html-mode-on` | `//!@html-mode-on` | Switch to HTML mode (mixed rewriter only). |
+| `html-mode-off` | `//!@html-mode-off` | Switch back to text mode. |
+
+```js
+//!@ ignore-next-line
+const template = '{{ this is not interpolated }}'
+const value = '{{ this IS interpolated }}'
+```
+
+### Full Text Mode Example
 
 Source:
-
 ```js
 let myVar = 1
 //=IF (a === b)
@@ -126,8 +185,9 @@ myVar -= 4
 const myVar2 = 2
 ```
 
-Will be rewritten with context = `{ a: 1, b: 1, c: 2, d: 2, items: [1, 2] }`:
+Context: `{ a: 1, b: 1, c: 2, d: 2, items: [1, 2] }`
 
+Output:
 ```js
 let myVar = 1
 const item1 = '1' // reveal comment
@@ -137,48 +197,96 @@ myVar += 2
 const myVar2 = 2
 ```
 
-### HTML
+## HTML Mode
 
-The html template is good for XML-like sources (html, xml, svg, ...).
+HTML mode parses markup structure and supports Vue-inspired directives for conditionals, loops, and dynamic attributes.
 
-By default html template uses vue-like syntax.
+### Expressions
 
-**It supports:**
+Interpolation works the same as text mode:
 
-- `v-for="..."`: attribute for loop the node. Expression must be a valid javascript loop expression.
-- `v-if="..."`: attribute for conditional rendering of the node. Expression must be a valid javascript condition expression.
-- `v-else-if="..."`: attribute for conditional rendering of the node. Expression must be a valid javascript condition expression.
-- `v-else`: attribute for conditional rendering of the node.
-- `:<attr_name>="..."`: expression as attribute value. Expression must be a valid javascript code that returns string/boolean or anything that casts to a string/boolean. If the expression result is type of boolean, the attribute will have no value and will be hidden if the result equals `false`.
-- `{{ ... }}`: vue-like string expressions `{{ scopedValue }}` accepts valid javascript code and must interpolate into a `string` or anything that can be casted to `string`. The expression can access the context vars.
+```html
+<h1>{{ title }}</h1>
+<p>Welcome, {{ user.name }}!</p>
+```
 
-### TEXT & HTML
+### Conditional Rendering (v-if / v-else-if / v-else)
 
-By default `ProstoRewrite` supports both: text and html modes at the same time. The default mode is controled by the [options](#options).
+```html
+<div v-if="user.isAdmin">
+    <h2>Admin Panel</h2>
+</div>
+<div v-else-if="user.isEditor">
+    <h2>Editor Dashboard</h2>
+</div>
+<div v-else>
+    <h2>Welcome, {{ user.name }}</h2>
+</div>
+```
 
-If you want to switch to html mode in the middle of the text source you can use the following instruction:
+Only the matching block is rendered. The `v-if` / `v-else-if` / `v-else` chain must be on sibling elements.
 
-`//!@html-mode-on` or `#!@html-mode-on`
+### Loops (v-for)
 
-And to switch back use:
+```html
+<ul>
+    <li v-for="item of items">{{ item }}</li>
+</ul>
+```
 
-`//!@html-mode-off` or `#!@html-mode-off`
+Any valid JavaScript loop expression works:
 
-If you want to switch to text mode in the middle of the html source you can use the following instruction:
+```html
+<tr v-for="let i = 0; i < rows.length; i++">
+    <td>{{ rows[i].name }}</td>
+</tr>
+```
 
-`<!--!@text-mode-on-->`
+`v-for` and `v-if` can be combined on the same element:
 
-And to switch back use:
+```html
+<li v-for="item of items" v-if="item.visible">{{ item.name }}</li>
+```
 
-`<!--!@text-mode-off-->`
+### Dynamic Attributes
 
-**Examples:**
+Prefix any attribute with `:` to evaluate it as a JavaScript expression:
 
-Text template with embedded html processor:
+```html
+<img :src="baseUrl + '/images/' + image.file" :alt="image.title">
+<a :href="link.url" :target="link.external ? '_blank' : undefined">{{ link.text }}</a>
+```
+
+**Smart boolean handling:** if the expression evaluates to `true`, the attribute is rendered without a value (`<input disabled>`). If `false`, the attribute is omitted entirely:
+
+```html
+<input type="text" :disabled="isLocked" :required="isRequired">
+```
+
+Context: `{ isLocked: true, isRequired: false }`
+
+Output:
+```html
+<input type="text" disabled>
+```
+
+### Switch to Text Mode
+
+Inside an HTML file, switch to text-mode parsing with HTML comment directives:
+
+```html
+<script>
+    <!--!@ text-mode-on -->
+    //=FOR (const key of Object.keys(config))
+    window.{{ key }} = {{ JSON.stringify(config[key]) }}
+    //=ENDFOR
+    <!--!@ text-mode-off -->
+</script>
+```
+
+And the reverse — switch to HTML inside a text file:
 
 ```js
-const a = 'test'
-//=IF (condition)
 const html = `
 //!@ html-mode-on
 <div v-for='item of items'>
@@ -186,175 +294,174 @@ const html = `
 </div>
 //!@ html-mode-off
 `
-//=END IF
 ```
 
-Html template with embedded text processor:
+## File and Directory Rewriting
 
-```html
-<div v-if="condition">
-    <!--!@ text-mode-on -->
-    const a = 'b' #=IF (condition) console.log(a) #=ENDIF
-    <!--!@ text-mode-off -->
-</div>
-```
+The main use case: scaffold entire project templates.
 
-### Options
-
-Options object is totally optional. The example below demonstrates the default values.
+### Rewrite a Single File
 
 ```js
-const rw = new ProstoRewrite({
-    defaultMode: 'auto', // text | html | auto
-    debug: false,
-    htmlPattern: ['*.{html,xhtml,xml,svg}'],
-    textPattern: [
-        '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
-        'Dockerfile',
-        '*config',
-        '.gitignore',
-    ],
-    html: {
-        exprDelimeters: ['{{', '}}'],
-        attrExpression: ':',
-        blockOperation: 'v-',
-        directive: '!@',
-        voidTags: [
-            'area',
-            'base',
-            'br',
-            'col',
-            'command',
-            'embed',
-            'hr',
-            'img',
-            'input',
-            'keygen',
-            'link',
-            'meta',
-            'param',
-            'source',
-            'track',
-            'wbr',
-        ],
-        textTags: ['script', 'style'],
-    },
-    text: {
-        exprDelimeters: ['{{', '}}'],
-        blockOperation: '=',
-        revealLine: ':',
-        directive: '!@',
-    },
-})
+import { ProstoRewrite } from '@prostojs/rewrite'
+
+const rw = new ProstoRewrite()
+
+// Returns rendered content; optionally writes to output path
+const content = await rw.rewriteFile(
+  {
+    input: 'path/to/template.js',
+    output: 'path/to/output.js',  // optional
+    mode: 'auto',                 // optional: 'text' | 'html' | 'auto'
+  },
+  { name: 'my-app', version: '1.0.0' }
+)
 ```
 
-| Option              | Type                             | Description                                                                                                                                                        |
-| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| defaultMode         | `'text'` \| `'html'` \| `'auto'` | Determines the type of template processor used for templates. When `auto` it will use `htmlPattern` and `textPattern` options to decide on which processor to use. |
-| debug               | `boolean`                        | Pushes debug messages to console when `true`.                                                                                                                      |
-| htmlPattern         | `string[]`                       | Glob pattern that defines files to be processed by `html` processor for `defaultMode` = `'auto'` mode.                                                             |
-| textPattern         | `string[]`                       | Glob pattern that defines files to be processed by `text` processor for `defaultMode` = `'auto'` mode.                                                             |
-| text                | `object`                         | Options for `text` processor.                                                                                                                                      |
-| text.exprDelimeters | `[string, string]`               | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.                                                               |
-| text.blockOperation | `string`                         | Defines the prefix for block operations (e.g. `for`, `if`, ...). Default: `'='`.                                                                                   |
-| text.revealLine     | `string`                         | Defines the prefix for reveal commented line. Default: `':'`.                                                                                                      |
-| text.directive      | `string`                         | Defines the prefix for directives (e.g. `ignore-next-line`, `html-mode-on`, ...). Default: `'!@'`.                                                                 |
-| html                | `object`                         | Options for `html` processor.                                                                                                                                      |
-| html.exprDelimeters | `[string, string]`               | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.                                                               |
-| html.attrExpression | `string`                         | Defines the prefix for attributes that have to be interpolated. Default: `':'`.                                                                                    |
-| html.blockOperation | `string`                         | Defines the prefix for block-operations attributes (e.g. `for`, `if`, ...). Default: `'v-'`.                                                                       |
-| html.directive      | `string`                         | Defines the prefix for directives (e.g. `text-mode-on`, ...). Default: `'!@'`.                                                                                     |
-| html.voidTags       | `string[]`                       | List of void tags (without closing tags and without innerText)                                                                                                     |
-| html.textTags       | `string[]`                       | List of text tags (that contain text and no other tags)                                                                                                            |
+### Rewrite an Entire Directory
+
+```js
+await rw.rewriteDir(
+  {
+    baseDir: './template',
+    output: './my-new-project',
+    include: ['**/*'],                                        // optional glob patterns
+    exclude: ['node_modules/**'],                             // optional glob patterns
+    renameFile: (name) => name.replace('__name__', 'my-app'), // optional
+    onFile: (path, output) => console.log(`Wrote: ${path}`),  // optional callback
+    mode: 'auto',                                             // optional
+  },
+  {
+    name: 'my-app',
+    description: 'My awesome app',
+    useTypescript: true,
+    features: ['auth', 'api', 'database'],
+  }
+)
+```
+
+**Mode auto-detection** picks the right parser based on file extension:
+- **HTML mode:** `*.html`, `*.xhtml`, `*.xml`, `*.svg`
+- **Text mode:** `*.js`, `*.ts`, `*.jsx`, `*.tsx`, `*.json`, `*.yml`, `*.yaml`, `*.md`, `*.txt`, `*.ini`, `Dockerfile`, `*config`, `.gitignore`
+
+Files that don't match any pattern are copied as-is.
 
 ## Rewriters
 
-Instance of `ProstoRewrite` ships 3 versions of rewriters:
-
-- text
-- html
-- mixed
+`ProstoRewrite` provides three rewriter flavors:
 
 ```js
 const rw = new ProstoRewrite()
-// 3 flavors:
-const trw = rw.textRewriter // rewriter that can parse only text
-const hrw = rw.htmlRewriter // rewriter that can parse only html
-const mrw = rw.mixedRewriter // rewriter that can parse both
-// source for text rewriter:
-const source = '//=IF (a === 1)\nconst a = 1'
-const context = { a: 1 }
-// each rewriter has the same interface:
-trw.genRewriteCode(source) // returns rendered function source code
-trw.genRewriteFunction(source) // returns rewrite-function
-trw.printAsTree(source) // prints parsed source as a tree
-trw.rewrite(source, context) // renders the source with context
+
+const trw = rw.textRewriter    // text only
+const hrw = rw.htmlRewriter    // html only
+const mrw = rw.mixedRewriter   // both (supports mode-switching directives)
+// mrw.text — text rewriter with html-mode-on support
+// mrw.html — html rewriter with text-mode-on support
 ```
 
-If you're going to use one template file for multiple renders it makes sense to cache its rewrite-function:
+Each rewriter has the same interface:
 
 ```js
-// An abstract example of using cached rewrite-function
-const rw = new ProstoRewrite()
-const trw = rw.textRewriter
-const rewriteFunc = trw.genRewriteFunction(source)
-const result1 = rewriteFunc(context1)
-const result2 = rewriteFunc(context2)
-const result3 = rewriteFunc(context3)
+// Generate the compiled JavaScript source (for inspection/debugging)
+trw.genRewriteCode(source)
+
+// Compile once, execute many times — ideal for repeated renders
+const render = trw.genRewriteFunction(source)
+const out1 = render({ name: 'Alice' })
+const out2 = render({ name: 'Bob' })
+
+// One-shot: parse + compile + execute
+trw.rewrite(source, context)
+
+// Debug: print the parse tree to console
+trw.printAsTree(source)
 ```
 
-Besides those there is one more **String Expression Rewriter** comes as a _bonus_.
+### String Expression Rewriter
 
-It is can parse only string expressions and preserves the expression type if its source consists only from an expression. When the source has some surrounding string(s) it will cast the expression to string type.
-
-This kind of rewriter may be usefull when working with some configuration files that can have expressions as properties values.
-
-**Usage example**
+For simple interpolation without block operations (config values, file paths):
 
 ```js
 import { getStringExpressionRewriter } from '@prostojs/rewrite'
 
 const srw = getStringExpressionRewriter()
 
-// the source has surrounding strings and the expression
-// will be casted to string type as well:
-console.log(srw.rewrite('before {{ a }} after', { a: 5 }))
-// output:
-// 'before 5 after'
+// Mixed string: always returns string
+srw.rewrite('Hello {{ name }}, age {{ age }}', { name: 'World', age: 25 })
+// => "Hello World, age 25"
 
-// the source consists only of a single expression
-// therefore its type will be preserved:
-console.log(srw.rewrite('{{ a }}', { a: 5 }) === 5)
-// output:
-// true
+// Single expression: preserves the original type
+srw.rewrite('{{ count }}', { count: 42 })
+// => 42 (number, not string)
 ```
 
-**Configuraton example**
-
-Let's assume that we want a config that must store some path generation logic. We can not store function as we're supposed to store the config to DB. We can use a string expression like so:
+This is useful for configuration files where property values can contain expressions:
 
 ```js
-import { getStringExpressionRewriter } from '@prostojs/rewrite'
-
-const srw = getStringExpressionRewriter()
-
 const config = {
-    path: "some/path/{{ key.toLowerCase() }}.{{ type === 'javascript' ? 'js' : 'json' }}",
+  path: "some/path/{{ key.toLowerCase() }}.{{ type === 'javascript' ? 'js' : 'json' }}",
 }
 
-const context = {
-    key: 'TEST',
-    type: 'javascript',
-}
-
-// caching the rewrite function for path
-// to avoid parsing the path string every time
 const pathFunc = srw.genRewriteFunction(config.path)
-
-// rewriting the config path
-const thePath = pathFunc(context)
-
-console.log(thePath)
-// output:
-// 'some/path/test.js'
+pathFunc({ key: 'TEST', type: 'javascript' })
+// => "some/path/test.js"
 ```
+
+## Options
+
+All options are optional. The example below shows the default values:
+
+```js
+const rw = new ProstoRewrite({
+  defaultMode: 'auto',   // 'text' | 'html' | 'auto'
+  debug: false,
+
+  htmlPattern: ['*.{html,xhtml,xml,svg}'],
+  textPattern: [
+    '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
+    'Dockerfile',
+    '*config',
+    '.gitignore',
+  ],
+
+  text: {
+    exprDelimiters: ['{{', '}}'],
+    blockOperation: '=',
+    revealLine: ':',
+    directive: '!@',
+  },
+
+  html: {
+    exprDelimiters: ['{{', '}}'],
+    blockOperation: 'v-',
+    attrExpression: ':',
+    directive: '!@',
+    voidTags: ['area', 'base', 'br', 'col', 'command', 'embed', 'hr',
+               'img', 'input', 'keygen', 'link', 'meta', 'param',
+               'source', 'track', 'wbr'],
+    textTags: ['script', 'style'],
+  },
+})
+```
+
+| Option | Type | Description |
+|---|---|---|
+| `defaultMode` | `'text'` \| `'html'` \| `'auto'` | Template processor selection. `auto` uses file patterns to decide. |
+| `debug` | `boolean` | Print debug parse trees to console. |
+| `htmlPattern` | `string[]` | Glob patterns for files processed by HTML parser. |
+| `textPattern` | `string[]` | Glob patterns for files processed by text parser. |
+| `text.exprDelimiters` | `[string, string]` | Expression delimiters. Default: `['{{', '}}']` |
+| `text.blockOperation` | `string` | Prefix for block operations (`IF`, `FOR`, ...). Default: `'='` |
+| `text.revealLine` | `string` | Prefix for reveal lines. Default: `':'` |
+| `text.directive` | `string` | Prefix for directives (`ignore-next-line`, ...). Default: `'!@'` |
+| `html.exprDelimiters` | `[string, string]` | Expression delimiters. Default: `['{{', '}}']` |
+| `html.blockOperation` | `string` | Prefix for block attributes (`if`, `for`, ...). Default: `'v-'` |
+| `html.attrExpression` | `string` | Prefix for expression attributes. Default: `':'` |
+| `html.directive` | `string` | Prefix for directives (`text-mode-on`, ...). Default: `'!@'` |
+| `html.voidTags` | `string[]` | Self-closing HTML tags. |
+| `html.textTags` | `string[]` | Tags with text-only content (no child tag parsing). |
+
+## License
+
+MIT

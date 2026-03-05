@@ -1,41 +1,59 @@
-import { BasicNode, TBasicNodeOptions } from '@prostojs/parser'
+import { Node, textContent } from '@prostojs/parser'
 import { TStringExpressionData, TStringNodeData } from './types'
 
-const stringNodeOptions: TBasicNodeOptions<TStringNodeData> = {
-    label: '',
-    icon: '"',
-    tokens: [/(?<quote>["'`])/, ({ customData }) => customData.quote || ''],
-    backSlash: '-ignore',
+const quoteEndRegex: Record<string, RegExp> = {
+    '"': /(?<=(?<!\\)(?:\\\\)*)"/ ,
+    "'": /(?<=(?<!\\)(?:\\\\)*)'/,
+    '`': /(?<=(?<!\\)(?:\\\\)*)`/,
 }
-const stringNode = new BasicNode<TStringNodeData>(stringNodeOptions)
+
+const stringNode = new Node<TStringNodeData>({
+    name: 'string',
+    start: { token: /(?<quote>["'`])/ },
+    end: {
+        token: (ctx) => {
+            const q = ctx.node.data.quote
+            if (!q) return ''
+            return quoteEndRegex[q] || ''
+        },
+    },
+    data: { quote: '' },
+})
 
 export function stringExpressionNodeFactory(
     interpolationDelimiters: [string, string],
 ) {
-    return new BasicNode<TStringExpressionData>({
-        label: 'string',
-        icon: '≈',
-        tokens: [interpolationDelimiters[0], interpolationDelimiters[1]],
-        tokenOE: 'omit-omit',
+    return new Node<TStringExpressionData>({
+        name: 'string-expression',
+        start: { token: interpolationDelimiters[0], omit: true },
+        end: { token: interpolationDelimiters[1], omit: true },
+        recognizes: [stringNode],
+        data: {
+            expression: '',
+            code: (node, level = 0) =>
+                ' '.repeat(level * 2) +
+                `__ += ${node.data.expression.trim()}\n`,
+        },
     })
-        .addAbsorbs(stringNode, 'join')
-        .mapContent('expression', 'join-clear')
-        .onPop(({ parserContext, customData: { expression } }) => {
+        .onClose((node) => {
+            // Build expression from content: strings joined + string node children
+            // converted to their text representation (with quotes)
+            node.data.expression = node.content
+                .map((c) => {
+                    if (typeof c === 'string') return c
+                    // String node child - include its full text content (with quotes)
+                    return textContent(c)
+                })
+                .join('')
+            // Clear content so renderCode doesn't double-process
+            node.content.length = 0
+
             try {
-                new Function(expression)
+                new Function(node.data.expression)
             } catch (e) {
-                parserContext.panic(
+                throw new Error(
                     'Invalid expression: ' + (e as Error).message,
-                    expression.length +
-                        interpolationDelimiters[0].length +
-                        interpolationDelimiters[1].length,
                 )
             }
         })
-        .initCustomData(() => ({
-            expression: '',
-            code: ({ customData }, level = 0) =>
-                ' '.repeat(level * 2) +
-                `__ += ${customData.expression.trim()}\n`,
-        }))
 }

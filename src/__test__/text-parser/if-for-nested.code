@@ -8,7 +8,7 @@ with (__ctx__) {
       if (c === d) {
         __ += `            c === d\n`
       } else {
-        __ += `           else `
+        __ += `            else `
         __ += someExpr.toString()
         __ += `\n`
       }

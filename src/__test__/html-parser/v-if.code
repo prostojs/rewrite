@@ -2,9 +2,7 @@ let __ = ''
 let __v = ''
 with (__ctx__) {
   if (condition) {
-    __ += `<div `
-    __ += `>\n    content\n`
-    __ += `</div>`
+    __ += `<div >\n    content\n</div>`
   }
 }
 return __

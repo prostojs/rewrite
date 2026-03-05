@@ -1,8 +1,6 @@
 let __ = ''
 let __v = ''
 with (__ctx__) {
-  __ += `const a = 'test1'`
-  __ += `\nconst b = 'test2'\n`
-  __ += `const c = 'test3'`
+  __ += `const a = 'test1'\nconst b = 'test2'\nconst c = 'test3'`
 }
 return __
