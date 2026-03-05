@@ -1,5 +1,4 @@
 const args = require('minimist')(process.argv.slice(2))
-const path = require('path')
 const execa = require('execa')
 const { prompt } = require('enquirer')
 const version = require('../package.json').version
@@ -7,7 +6,6 @@ const semver = require('semver')
 const { dye } = require('@prostojs/dye')
 const run = (bin, args, opts = {}) =>
     execa(bin, args, { stdio: 'inherit', ...opts })
-const bin = (name) => path.resolve(__dirname, '../node_modules/.bin/' + name)
 
 const step = dye('cyan').prefix('\n').attachConsole()
 const error = dye('red-bright').attachConsole('error')
@@ -80,8 +78,7 @@ async function main() {
         // run tests before release
         step('Running tests...')
         if (!skipTests && !isDryRun) {
-            await run(bin('jest'), ['--clearCache'])
-            await run('npm', ['test', '--', '--bail'])
+            await run('npm', ['test'])
         } else {
             info(`(skipped)`)
         }
