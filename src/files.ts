@@ -4,7 +4,9 @@ export async function readDir(dirPath: string) {
         const path = await import('path')
         const fs = await import('fs')
         async function* getFiles(dir: string): AsyncGenerator<string> {
-            const dirents = await fs.promises.readdir(dir, { withFileTypes: true })
+            const dirents = await fs.promises.readdir(dir, {
+                withFileTypes: true,
+            })
             for (const dirent of dirents) {
                 const res = path.resolve(dir, dirent.name)
                 if (dirent.isDirectory()) {

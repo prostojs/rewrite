@@ -17,7 +17,4 @@ export const htmlVoidTags = [
     'wbr',
 ]
 
-export const htmlTextTags = [
-    'script',
-    'style',
-]
+export const htmlTextTags = ['script', 'style']

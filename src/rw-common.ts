@@ -1,23 +1,47 @@
-import { BasicNode, ProstoParserNode, ProstoParserNodeContext, renderCodeFragment } from '@prostojs/parser'
+import {
+    BasicNode,
+    ProstoParserNode,
+    ProstoParserNodeContext,
+    renderCodeFragment,
+} from '@prostojs/parser'
 import { TStringExpressionData } from '.'
 import { stringExpressionNodeFactory } from './string-expression'
-import { TProstoRewriter, TProstoRewriteContext, TRewriteNodeType } from './types'
+import {
+    TProstoRewriter,
+    TProstoRewriteContext,
+    TRewriteNodeType,
+} from './types'
 import { debug as printDebug } from './utils'
 
-export function genSafeFunc(code: string): (context?: TProstoRewriteContext) => string {
+export function genSafeFunc(
+    code: string,
+): (context?: TProstoRewriteContext) => string {
     try {
-        return new Function('__ctx__', 'process', 'window', 'global', 'require', code) as (context?: TProstoRewriteContext) => string
-    } catch(e) {
+        return new Function(
+            '__ctx__',
+            'process',
+            'window',
+            'global',
+            'require',
+            code,
+        ) as (context?: TProstoRewriteContext) => string
+    } catch (e) {
         console.error((e as Error).message)
         console.error((e as Error).stack)
         throw e
     }
 }
 
-function escapeString(s: string): string { return s.replace(/\\/g, '\\\\').replace(/`/g,'\\`').replace(/\n/g, '\\n').replace(/\$/g, '\\$') }
+function escapeString(s: string): string {
+    return s
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\n/g, '\\n')
+        .replace(/\$/g, '\\$')
+}
 
 export function pushString(s: string): string {
-    return `__ += \`${ escapeString(s) }\`\n`
+    return `__ += \`${escapeString(s)}\`\n`
 }
 
 export function renderCode(context: ProstoParserNodeContext, level = 1) {
@@ -30,7 +54,7 @@ export function renderCode(context: ProstoParserNodeContext, level = 1) {
         }
     }
     const indent = ' '.repeat(level * 2)
-    context.content.forEach(c => {
+    context.content.forEach((c) => {
         if (typeof c === 'string') {
             s += c
         } else {
@@ -53,18 +77,23 @@ export function renderCode(context: ProstoParserNodeContext, level = 1) {
     return result
 }
 
-export function getRewriter(rootNode: ProstoParserNode, debug = false): TProstoRewriter {
+export function getRewriter(
+    rootNode: ProstoParserNode,
+    debug = false,
+): TProstoRewriter {
     function getCode(source: string): string {
         const result = rootNode.parse(source)
         if (debug) {
             printDebug('Parsed tree view:\n' + result.toTree())
         }
-        return 'let __ = \'\'\n' + 
-            'let __v = \'\'\n' +
+        return (
+            "let __ = ''\n" +
+            "let __v = ''\n" +
             'with (__ctx__) {\n' +
             renderCode(result) +
             '}\n' +
             'return __'
+        )
     }
     function getFunc(source: string) {
         const code = getCode(source)
@@ -85,7 +114,8 @@ export function getRewriter(rootNode: ProstoParserNode, debug = false): TProstoR
         genRewriteCode: getCode,
         genRewriteFunction: getFunc,
         printAsTree: print,
-        rewrite: (source: string, context?: TProstoRewriteContext) => getFunc(source)(context || {}),
+        rewrite: (source: string, context?: TProstoRewriteContext) =>
+            getFunc(source)(context || {}),
     }
 }
 
@@ -106,19 +136,32 @@ function throwErrorFromFunction(e: Error, code: string): never {
     throw e
 }
 
-export function getStringExpressionRewriter(interpolationDelimiters: [string, string] = ['{{', '}}']) {
-    const stringExpression = stringExpressionNodeFactory(interpolationDelimiters)
+export function getStringExpressionRewriter(
+    interpolationDelimiters: [string, string] = ['{{', '}}'],
+) {
+    const stringExpression = stringExpressionNodeFactory(
+        interpolationDelimiters,
+    )
     const rootNode = new BasicNode({}).addRecognizes(stringExpression)
-    
+
     function getCode(source: string): string {
         const result = rootNode.parse(source)
-        return 'let __ = []\n' +
+        return (
+            'let __ = []\n' +
             'with (__ctx__) {\n' +
-            result.content.map(c => `__.push(${ typeof c === 'string' 
-                ? `\`${ escapeString(c) }\`` 
-                : `${ c.getCustomData<TStringExpressionData>().expression }` })`).join('\n  ') +
+            result.content
+                .map(
+                    (c) =>
+                        `__.push(${
+                            typeof c === 'string'
+                                ? `\`${escapeString(c)}\``
+                                : `${c.getCustomData<TStringExpressionData>().expression}`
+                        })`,
+                )
+                .join('\n  ') +
             '}\n' +
-            'return __.length === 1 ? __[0] : __.join(\'\')'
+            "return __.length === 1 ? __[0] : __.join('')"
+        )
     }
     function getFunc(source: string) {
         const code = getCode(source)
@@ -139,6 +182,7 @@ export function getStringExpressionRewriter(interpolationDelimiters: [string, st
         genRewriteCode: getCode,
         genRewriteFunction: getFunc,
         printAsTree: print,
-        rewrite: (source: string, context?: TProstoRewriteContext) => getFunc(source)(context || {}),
+        rewrite: (source: string, context?: TProstoRewriteContext) =>
+            getFunc(source)(context || {}),
     }
 }

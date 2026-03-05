@@ -5,7 +5,6 @@ import { ProstoRewrite } from '..'
 const hp = new ProstoRewrite().htmlRewriter
 
 describe('html-parser', () => {
-    
     it('must parse "plain"', () => {
         const name = 'plain'
         const result = hp.genRewriteCode(testFile(name))
@@ -45,11 +44,18 @@ describe('html-parser', () => {
 })
 
 function testFile(name: string) {
-  return fs.readFileSync(path.join(__dirname, 'html-parser', name + '.test')).toString()
+    return fs
+        .readFileSync(path.join(__dirname, 'html-parser', name + '.test'))
+        .toString()
 }
 function codeFile(name: string) {
-  return fs.readFileSync(path.join(__dirname, 'html-parser', name + '.code')).toString()
+    return fs
+        .readFileSync(path.join(__dirname, 'html-parser', name + '.code'))
+        .toString()
 }
 function saveCodeFile(name: string, data: string) {
-  return fs.writeFileSync(path.join(__dirname, 'html-parser', name + '.code'), data)
+    return fs.writeFileSync(
+        path.join(__dirname, 'html-parser', name + '.code'),
+        data,
+    )
 }

@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`templates must rewrite dir 1`] = `
+exports[`templates > must rewrite dir 1`] = `
 "<!DOCTYPE html>
 <html>
     <head>
@@ -18,12 +18,12 @@ exports[`templates must rewrite dir 1`] = `
 </html>"
 `;
 
-exports[`templates must rewrite dir 2`] = `
+exports[`templates > must rewrite dir 2`] = `
 "const val = 'http://test'
 "
 `;
 
-exports[`templates must rewrite dir 3`] = `
+exports[`templates > must rewrite dir 3`] = `
 "{
     "toBeRenamed": true
 }"

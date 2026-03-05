@@ -1,8 +1,15 @@
-import { ProstoParserNodeContext, TGenericCustomDataType } from '@prostojs/parser'
+import {
+    ProstoParserNodeContext,
+    TGenericCustomDataType,
+} from '@prostojs/parser'
 import { Minimatch } from 'minimatch'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface TRewriteNodeType<T extends { code: TRewriteCodeFactory<any> } = { code: TRewriteCodeFactory<any> }> {
+export interface TRewriteNodeType<
+    T extends { code: TRewriteCodeFactory<any> } = {
+        code: TRewriteCodeFactory<any>
+    },
+> {
     code: TRewriteCodeFactory<T>
     openCode?: string
     closeCode?: string
@@ -11,10 +18,13 @@ export interface TRewriteNodeType<T extends { code: TRewriteCodeFactory<any> } =
 export type TStringNodeData = { quote: string }
 
 export interface TStringExpressionData extends TRewriteNodeType<TStringExpressionData> {
-    expression: string,
+    expression: string
 }
 
-export type TRewriteCodeFactory<T extends TGenericCustomDataType> = (context: ProstoParserNodeContext<T>, level?: number) => string
+export type TRewriteCodeFactory<T extends TGenericCustomDataType> = (
+    context: ProstoParserNodeContext<T>,
+    level?: number,
+) => string
 
 export interface TValueNodeCustomData {
     quote: string
@@ -50,7 +60,9 @@ export interface THTMLBlockDescr {
 
 export interface TProstoRewriter {
     genRewriteCode: (source: string) => string
-    genRewriteFunction: (source: string) => (context?: TProstoRewriteContext) => string
+    genRewriteFunction: (
+        source: string,
+    ) => (context?: TProstoRewriteContext) => string
     printAsTree: (source: string) => void
     rewrite: (source: string, context?: TProstoRewriteContext) => string
 }
@@ -74,12 +86,12 @@ export interface TRewriteTextOptions extends TRewriteCommonOptions {
 }
 
 export interface TRewriteOptions {
-    defaultMode: TRewriteMode;
-    debug: boolean;
-    htmlPattern: Minimatch[];
-    textPattern: Minimatch[];
-    html: TRewriteHtmlOptions;
-    text: TRewriteTextOptions;
+    defaultMode: TRewriteMode
+    debug: boolean
+    htmlPattern: Minimatch[]
+    textPattern: Minimatch[]
+    html: TRewriteHtmlOptions
+    text: TRewriteTextOptions
 }
 
 export type TRewriteMode = 'html' | 'text' | 'auto'

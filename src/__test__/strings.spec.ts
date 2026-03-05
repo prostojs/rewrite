@@ -1,10 +1,10 @@
-import { getStringExpressionRewriter } from ".."
+import { getStringExpressionRewriter } from '..'
 
 describe('strings', () => {
     const srw = getStringExpressionRewriter()
 
     it('must rewrite string', () => {
-        const r = srw.rewrite('before {{ a }} after', { a: 'expression'})
+        const r = srw.rewrite('before {{ a }} after', { a: 'expression' })
         expect(r).toEqual('before expression after')
     })
 
@@ -17,9 +17,9 @@ describe('strings', () => {
 
     it('must rewrite complex case', () => {
         const config = {
-            path: 'some/path/{{ key.toLowerCase() }}.{{ type === \'javascript\' ? \'js\' : \'json\' }}'
+            path: "some/path/{{ key.toLowerCase() }}.{{ type === 'javascript' ? 'js' : 'json' }}",
         }
-        
+
         const context = {
             key: 'TEST',
             type: 'javascript',

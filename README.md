@@ -4,15 +4,16 @@ Easy and light templates renderer with HTML (XML) support based on [@prostojs/pa
 
 - Write syntactically valid templates (js, yaml, ...)
 - Use vue-like syntax for html-templates
-- Mix __html__ and __text__ modes at single template
+- Mix **html** and **text** modes at single template
 
 ## Install
 
-npm: 
+npm:
 
 `npm install @prostojs/rewrite`
 
 Via CDN:
+
 ```
 <script src="https://unpkg.com/@prostojs/tree"></script>
 <script src="https://unpkg.com/@prostojs/parser"></script>
@@ -34,27 +35,33 @@ async function main() {
     const context = { a: 1 } // context object for templates interpolation
 
     // rewrite a single file
-    const renderedContent = await rw.rewriteFile({
-        // required:
-        input: 'path/to/file/filename.js',
-        // optional:
-        output: 'path/to/rewrite/filename.js',
-        mode: 'auto',   // text | html | auto
-    }, context)
+    const renderedContent = await rw.rewriteFile(
+        {
+            // required:
+            input: 'path/to/file/filename.js',
+            // optional:
+            output: 'path/to/rewrite/filename.js',
+            mode: 'auto', // text | html | auto
+        },
+        context,
+    )
 
     // rewrite files in directory
-    await rw.rewriteDir({
-        // required:
-        baseDir: 'path/to/files',
-        // optional:
-        include: ['*.{js,html}'],   // glob pattern to include
-        exclude: ['*.svg'],         // glob pattern to exclude
-        output: 'output/path',
-        mode: 'auto',               // text | html | auto
-        onFile: (path, output) => {
-            console.log('Result for file ' + path + '\n' + output)
-        }
-    }, context)
+    await rw.rewriteDir(
+        {
+            // required:
+            baseDir: 'path/to/files',
+            // optional:
+            include: ['*.{js,html}'], // glob pattern to include
+            exclude: ['*.svg'], // glob pattern to exclude
+            output: 'output/path',
+            mode: 'auto', // text | html | auto
+            onFile: (path, output) => {
+                console.log('Result for file ' + path + '\n' + output)
+            },
+        },
+        context,
+    )
 }
 ```
 
@@ -64,16 +71,17 @@ async function main() {
 
 The text template is good for any text source (js, ts, yaml, ...).
 
-To keep the source files syntactically valid all the control flow blocks 
+To keep the source files syntactically valid all the control flow blocks
 must be written in comment `//` or `#`.
 
 Text template consists of:
+
 - operation blocks (`//=IF(...)`),
 - directives (`//!@ignore-next-line`),
 - reveal comments (`//: const a = 1`),
 - string expressions (`conat a = {{ scopedValue }}`).
 
-**Operation blocks*** **:**
+**Operation blocks\*** **:**
 Key | Example | Description
 ---|---|---
 `IF`|`//=IF(condition)` or `#=IF(condition)`|WIll add the lines below only if the `condition` returns `true`. The `condition` must be a valid javascript and can use `context` vars.
@@ -81,19 +89,19 @@ Key | Example | Description
 `ELSE`|`//=ELSE` or `#=ELSE`|WIll add the lines below only if the previous conditions didn't match. Must be used after `IF` or `ELSEIF` operation block.
 `ENDIF`**|`//=ENDIF` or `#=ENDIF`|Ends the `IF` blocks series.
 `FOR`|`//=FOR(a of b)` or `#=FOR(a of b)`|Will iterate through the loop. The `a of b` part must be a valid javascript loop expression and can use `context` vars.
-`ENDFOR`**|`//=ENDFOR` or `#=ENDFOR`|Ends the `FOR` block.
+`ENDFOR`\*\*|`//=ENDFOR` or `#=ENDFOR`|Ends the `FOR` block.
 
-*The operation block can have spaces before it and after it, but it must take only one line. All the operation blocks can start with `#` as well as with `//`
+\*The operation block can have spaces before it and after it, but it must take only one line. All the operation blocks can start with `#` as well as with `//`
 
-**The operation block may have spaces between words e.g. `ELSE IF`, `END FOR`...
+\*\*The operation block may have spaces between words e.g. `ELSE IF`, `END FOR`...
 
 **Directives:**
 
-Key|Example|Description
----|---|---
-`ignore-next-line` |`//!@ignore-next-line` or `#!@ignore-next-line`|Instruct the processor to ignore (not interpolate) the next line of the source. The next line will be copied without any change.
-`html-mode-on`|`//!@html-mode-on` or `#!@html-mode-on`|Instructs the processor (only if it is mixed rewriter) to start using HTML mode for the futher lines of the source.
-`html-mode-off`|`//!@html-mode-off` or `#!@html-mode-off`|Instructs the processor (only if it is mixed rewriter) to stop using HTML mode for the futher lines of the source and return to the text mode.
+| Key                | Example                                         | Description                                                                                                                                    |
+| ------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ignore-next-line` | `//!@ignore-next-line` or `#!@ignore-next-line` | Instruct the processor to ignore (not interpolate) the next line of the source. The next line will be copied without any change.               |
+| `html-mode-on`     | `//!@html-mode-on` or `#!@html-mode-on`         | Instructs the processor (only if it is mixed rewriter) to start using HTML mode for the futher lines of the source.                            |
+| `html-mode-off`    | `//!@html-mode-off` or `#!@html-mode-off`       | Instructs the processor (only if it is mixed rewriter) to stop using HTML mode for the futher lines of the source and return to the text mode. |
 
 **Reveal comments:** the line prefixed with `reveal comment` prefix will be rendered as **uncommented** line. Use this when needed to keep the source file syntatically valid.
 
@@ -102,22 +110,24 @@ Key|Example|Description
 **Example:**
 
 Source:
+
 ```js
 let myVar = 1
 //=IF (a === b)
-    //=FOR (const i of items)
+//=FOR (const i of items)
 //: const item{{ i }} = '{{ i }}' // reveal comment
-        //=IF (c === d)
+//=IF (c === d)
 myVar += 2
-        //=ELSE
+//=ELSE
 myVar -= 4
-        //=ENDIF
-    //=END FOR
+//=ENDIF
+//=END FOR
 //=END IF
 const myVar2 = 2
 ```
 
 Will be rewritten with context = `{ a: 1, b: 1, c: 2, d: 2, items: [1, 2] }`:
+
 ```js
 let myVar = 1
 const item1 = '1' // reveal comment
@@ -134,6 +144,7 @@ The html template is good for XML-like sources (html, xml, svg, ...).
 By default html template uses vue-like syntax.
 
 **It supports:**
+
 - `v-for="..."`: attribute for loop the node. Expression must be a valid javascript loop expression.
 - `v-if="..."`: attribute for conditional rendering of the node. Expression must be a valid javascript condition expression.
 - `v-else-if="..."`: attribute for conditional rendering of the node. Expression must be a valid javascript condition expression.
@@ -164,6 +175,7 @@ And to switch back use:
 **Examples:**
 
 Text template with embedded html processor:
+
 ```js
 const a = 'test'
 //=IF (condition)
@@ -178,13 +190,11 @@ const html = `
 ```
 
 Html template with embedded text processor:
+
 ```html
 <div v-if="condition">
     <!--!@ text-mode-on -->
-    const a = 'b'
-    #=IF (condition)
-    console.log(a)
-    #=ENDIF
+    const a = 'b' #=IF (condition) console.log(a) #=ENDIF
     <!--!@ text-mode-off -->
 </div>
 ```
@@ -195,38 +205,38 @@ Options object is totally optional. The example below demonstrates the default v
 
 ```js
 const rw = new ProstoRewrite({
-    defaultMode: 'auto',    // text | html | auto
+    defaultMode: 'auto', // text | html | auto
     debug: false,
     htmlPattern: ['*.{html,xhtml,xml,svg}'],
     textPattern: [
-                    '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
-                    'Dockerfile',
-                    '*config',
-                    '.gitignore',
-                ],
+        '*.{js,jsx,ts,tsx,txt,json,yml,yaml,md,ini}',
+        'Dockerfile',
+        '*config',
+        '.gitignore',
+    ],
     html: {
         exprDelimeters: ['{{', '}}'],
         attrExpression: ':',
         blockOperation: 'v-',
         directive: '!@',
         voidTags: [
-                    'area',
-                    'base',
-                    'br',
-                    'col',
-                    'command',
-                    'embed',
-                    'hr',
-                    'img',
-                    'input',
-                    'keygen',
-                    'link',
-                    'meta',
-                    'param',
-                    'source',
-                    'track',
-                    'wbr',
-                ],
+            'area',
+            'base',
+            'br',
+            'col',
+            'command',
+            'embed',
+            'hr',
+            'img',
+            'input',
+            'keygen',
+            'link',
+            'meta',
+            'param',
+            'source',
+            'track',
+            'wbr',
+        ],
         textTags: ['script', 'style'],
     },
     text: {
@@ -238,28 +248,29 @@ const rw = new ProstoRewrite({
 })
 ```
 
-Option | Type | Description
----|---|---
-defaultMode | `'text'` \| `'html'` \| `'auto'` | Determines the type of template processor used for templates. When `auto` it will use `htmlPattern` and `textPattern` options to decide on which processor to use.
-debug       | `boolean`   | Pushes debug messages to console when `true`.
-htmlPattern | `string[]`  | Glob pattern that defines files to be processed by `html` processor for `defaultMode` = `'auto'` mode.
-textPattern | `string[]`  | Glob pattern that defines files to be processed by `text` processor for `defaultMode` = `'auto'` mode.
-text        | `object`    | Options for `text` processor.
-text.exprDelimeters | `[string, string]` | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.
-text.blockOperation | `string` | Defines the prefix for block operations (e.g. `for`, `if`, ...). Default: `'='`.
-text.revealLine     | `string` | Defines the prefix for reveal commented line. Default: `':'`.
-text.directive      | `string` | Defines the prefix for directives (e.g. `ignore-next-line`, `html-mode-on`, ...). Default: `'!@'`.
-html        | `object`    | Options for `html` processor.
-html.exprDelimeters | `[string, string]` | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.
-html.attrExpression | `string` | Defines the prefix for attributes that have to be interpolated. Default: `':'`.
-html.blockOperation | `string` | Defines the prefix for block-operations attributes (e.g. `for`, `if`, ...). Default: `'v-'`.
-html.directive      | `string` | Defines the prefix for directives (e.g. `text-mode-on`, ...). Default: `'!@'`.
-html.voidTags       | `string[]` | List of void tags (without closing tags and without innerText)
-html.textTags       | `string[]` | List of text tags (that contain text and no other tags)
+| Option              | Type                             | Description                                                                                                                                                        |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| defaultMode         | `'text'` \| `'html'` \| `'auto'` | Determines the type of template processor used for templates. When `auto` it will use `htmlPattern` and `textPattern` options to decide on which processor to use. |
+| debug               | `boolean`                        | Pushes debug messages to console when `true`.                                                                                                                      |
+| htmlPattern         | `string[]`                       | Glob pattern that defines files to be processed by `html` processor for `defaultMode` = `'auto'` mode.                                                             |
+| textPattern         | `string[]`                       | Glob pattern that defines files to be processed by `text` processor for `defaultMode` = `'auto'` mode.                                                             |
+| text                | `object`                         | Options for `text` processor.                                                                                                                                      |
+| text.exprDelimeters | `[string, string]`               | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.                                                               |
+| text.blockOperation | `string`                         | Defines the prefix for block operations (e.g. `for`, `if`, ...). Default: `'='`.                                                                                   |
+| text.revealLine     | `string`                         | Defines the prefix for reveal commented line. Default: `':'`.                                                                                                      |
+| text.directive      | `string`                         | Defines the prefix for directives (e.g. `ignore-next-line`, `html-mode-on`, ...). Default: `'!@'`.                                                                 |
+| html                | `object`                         | Options for `html` processor.                                                                                                                                      |
+| html.exprDelimeters | `[string, string]`               | Defines the delimeters for string expressions e.g. `{{ n.toLowerCase() }}`. Default: `['{{', '}}']`.                                                               |
+| html.attrExpression | `string`                         | Defines the prefix for attributes that have to be interpolated. Default: `':'`.                                                                                    |
+| html.blockOperation | `string`                         | Defines the prefix for block-operations attributes (e.g. `for`, `if`, ...). Default: `'v-'`.                                                                       |
+| html.directive      | `string`                         | Defines the prefix for directives (e.g. `text-mode-on`, ...). Default: `'!@'`.                                                                                     |
+| html.voidTags       | `string[]`                       | List of void tags (without closing tags and without innerText)                                                                                                     |
+| html.textTags       | `string[]`                       | List of text tags (that contain text and no other tags)                                                                                                            |
 
 ## Rewriters
 
 Instance of `ProstoRewrite` ships 3 versions of rewriters:
+
 - text
 - html
 - mixed
@@ -267,17 +278,17 @@ Instance of `ProstoRewrite` ships 3 versions of rewriters:
 ```js
 const rw = new ProstoRewrite()
 // 3 flavors:
-const trw = rw.textRewriter     // rewriter that can parse only text
-const hrw = rw.htmlRewriter     // rewriter that can parse only html
-const mrw = rw.mixedRewriter    // rewriter that can parse both
+const trw = rw.textRewriter // rewriter that can parse only text
+const hrw = rw.htmlRewriter // rewriter that can parse only html
+const mrw = rw.mixedRewriter // rewriter that can parse both
 // source for text rewriter:
 const source = '//=IF (a === 1)\nconst a = 1'
 const context = { a: 1 }
 // each rewriter has the same interface:
-trw.genRewriteCode(source)      // returns rendered function source code
-trw.genRewriteFunction(source)  // returns rewrite-function
-trw.printAsTree(source)         // prints parsed source as a tree
-trw.rewrite(source, context)      // renders the source with context
+trw.genRewriteCode(source) // returns rendered function source code
+trw.genRewriteFunction(source) // returns rewrite-function
+trw.printAsTree(source) // prints parsed source as a tree
+trw.rewrite(source, context) // renders the source with context
 ```
 
 If you're going to use one template file for multiple renders it makes sense to cache its rewrite-function:
@@ -299,6 +310,7 @@ It is can parse only string expressions and preserves the expression type if its
 This kind of rewriter may be usefull when working with some configuration files that can have expressions as properties values.
 
 **Usage example**
+
 ```js
 import { getStringExpressionRewriter } from '@prostojs/rewrite'
 
@@ -312,7 +324,7 @@ console.log(srw.rewrite('before {{ a }} after', { a: 5 }))
 
 // the source consists only of a single expression
 // therefore its type will be preserved:
-console.log(srw.rewrite('{{ a }}', { a: 5 }) === 5 )
+console.log(srw.rewrite('{{ a }}', { a: 5 }) === 5)
 // output:
 // true
 ```
@@ -327,7 +339,7 @@ import { getStringExpressionRewriter } from '@prostojs/rewrite'
 const srw = getStringExpressionRewriter()
 
 const config = {
-    path: 'some/path/{{ key.toLowerCase() }}.{{ type === \'javascript\' ? \'js\' : \'json\' }}'
+    path: "some/path/{{ key.toLowerCase() }}.{{ type === 'javascript' ? 'js' : 'json' }}",
 }
 
 const context = {
@@ -345,5 +357,4 @@ const thePath = pathFunc(context)
 console.log(thePath)
 // output:
 // 'some/path/test.js'
-
 ```

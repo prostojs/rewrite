@@ -7,7 +7,7 @@ const semver = require('semver')
 const { dye } = require('@prostojs/dye')
 const run = (bin, args, opts = {}) =>
     execa(bin, args, { stdio: 'inherit', ...opts })
-const bin = name => path.resolve(__dirname, '../node_modules/.bin/' + name)
+const bin = (name) => path.resolve(__dirname, '../node_modules/.bin/' + name)
 
 const step = dye('cyan').prefix('\n').attachConsole()
 const error = dye('red-bright').attachConsole('error')
@@ -15,7 +15,7 @@ const good = dye('green', 'bold').prefix('\n✓ ').attachConsole()
 const info = dye('green', 'dim').attachConsole('info')
 
 const branch = execa.sync('git', ['branch', '--show-current']).stdout
-const inc = i => {
+const inc = (i) => {
     if (['prerelease', 'premajor'].includes(i.split(' ')[0])) {
         const [action, pre] = i.split(' ')
         return semver.inc(version, action, pre)
@@ -58,9 +58,8 @@ async function main() {
             type: 'select',
             name: 'release',
             message: 'Select release type',
-            choices: versionIncrements.map(i => `${i} (${inc(i)})`)
+            choices: versionIncrements.map((i) => `${i} (${inc(i)})`),
         })
-
 
         targetVersion = release.match(/\((.*)\)/)[1]
 
@@ -71,7 +70,7 @@ async function main() {
         const { yes } = await prompt({
             type: 'confirm',
             name: 'yes',
-            message: `Releasing v${targetVersion}. Confirm?`
+            message: `Releasing v${targetVersion}. Confirm?`,
         })
 
         if (!yes) {
@@ -104,15 +103,20 @@ async function main() {
 
         const npmAction = release.split(' ')[0]
         const pre = release.split(' ')[1]
-        const preAction = [
-            'prerelease',
-            'preminor',
-            'premajor',
-        ].includes(npmAction) ? ['--preid', pre] : []
+        const preAction = ['prerelease', 'preminor', 'premajor'].includes(
+            npmAction,
+        )
+            ? ['--preid', pre]
+            : []
 
         step('Creating a new version ' + targetVersion + ' ...')
-        execa.sync('npm', ['version', npmAction, ...preAction, '-m', commitMessage])
-
+        execa.sync('npm', [
+            'version',
+            npmAction,
+            ...preAction,
+            '-m',
+            commitMessage,
+        ])
     } else {
         error('Branch "main" expected')
     }
@@ -128,4 +132,3 @@ async function main() {
 
     good('All done!')
 }
-

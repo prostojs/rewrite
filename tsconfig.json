@@ -1,29 +1,21 @@
 {
     "compilerOptions": {
-        "target": "es2019",
-        "lib": [
-            "es2019"
-        ],
+        "target": "es2022",
+        "lib": ["es2022"],
         "module": "ESNext",
-        "declaration": false,
+        "moduleResolution": "bundler",
+        "declaration": true,
         "sourceMap": true,
-        "moduleResolution": "node",
         "resolveJsonModule": true,
-        "rootDir": ".",
         "allowJs": false,
-        "outDir": "build",
-        "downlevelIteration": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
         "noImplicitAny": true,
         "skipLibCheck": true,
         "noUnusedLocals": false,
-        "noLib": false,
         "removeComments": true,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "types": ["jest", "node"],
+        "types": ["node", "vitest/globals"]
     },
     "include": ["src/*.ts", "src/**/*.ts", "**/*.spec.ts"],
     "exclude": ["node_modules", "explorations"]
