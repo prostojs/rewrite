@@ -52,7 +52,7 @@
         "minimatch": "^10.2.4"
     },
     "devDependencies": {
-        "@prostojs/dye": "^0.4.9",
+        "@prostojs/dye": "^0.4.10",
         "@types/node": "^20.19.35",
         "conventional-changelog": "^5.1.0",
         "conventional-changelog-cli": "^4.1.0",

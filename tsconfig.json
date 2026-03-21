@@ -1,22 +1,35 @@
 {
-    "compilerOptions": {
-        "target": "es2022",
-        "lib": ["es2022"],
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "declaration": true,
-        "sourceMap": true,
-        "resolveJsonModule": true,
-        "allowJs": false,
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "noImplicitAny": true,
-        "skipLibCheck": true,
-        "noUnusedLocals": false,
-        "removeComments": true,
-        "types": ["node", "vitest/globals"]
-    },
-    "include": ["src/*.ts", "src/**/*.ts", "**/*.spec.ts"],
-    "exclude": ["node_modules", "explorations"]
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": [
+      "es2022"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "removeComments": true,
+    "types": [
+      "node",
+      "vitest/globals",
+      "@prostojs/dye/global"
+    ]
+  },
+  "include": [
+    "src/*.ts",
+    "src/**/*.ts",
+    "**/*.spec.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "explorations"
+  ]
 }
