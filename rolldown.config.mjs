@@ -11,10 +11,12 @@ export default [
             format: 'esm',
             sourcemap: false,
         },
-        define: {
-            'process.env.NODE_ENV': JSON.stringify('production'),
-            __NODE_JS__: 'true',
-            __BROWSER__: 'false',
+        transform: {
+            define: {
+                'process.env.NODE_ENV': JSON.stringify('production'),
+                __NODE_JS__: 'true',
+                __BROWSER__: 'false',
+            },
         },
         plugins: [dyePlugin()],
     },
@@ -26,10 +28,12 @@ export default [
             format: 'cjs',
             sourcemap: false,
         },
-        define: {
-            'process.env.NODE_ENV': JSON.stringify('production'),
-            __NODE_JS__: 'true',
-            __BROWSER__: 'false',
+        transform: {
+            define: {
+                'process.env.NODE_ENV': JSON.stringify('production'),
+                __NODE_JS__: 'true',
+                __BROWSER__: 'false',
+            },
         },
         plugins: [dyePlugin()],
     },
