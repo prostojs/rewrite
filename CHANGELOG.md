@@ -1,3 +1,12 @@
+## [0.2.2](https://github.com/prostojs/rewrite/compare/v0.2.1...v0.2.2) (2026-03-21)
+
+
+### Bug Fixes
+
+* fix build ([3606a1a](https://github.com/prostojs/rewrite/commit/3606a1aac54381b072f887a6eb964f7e9e79fccd))
+
+
+
 ## [0.2.1](https://github.com/prostojs/rewrite/compare/v0.2.0...v0.2.1) (2026-03-05)
 
 
