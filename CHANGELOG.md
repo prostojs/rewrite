@@ -1,3 +1,12 @@
+## [0.2.4](https://github.com/prostojs/rewrite/compare/v0.2.3...v0.2.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **deps:** minimatch ^11 (security: minimatch 10.x advisories) ([481e96d](https://github.com/prostojs/rewrite/commit/481e96df4022c977e2746852a67d71925d70ba7a))
+
+
+
 ## [0.2.3](https://github.com/prostojs/rewrite/compare/v0.2.2...v0.2.3) (2026-03-21)
 
 
